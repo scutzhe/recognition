@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="VcsDirectoryMappings">
+    <mapping directory="$PROJECT_DIR$/.." vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/FSA-Net" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/PFLD-pytorch" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/deep-head-pose" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/face-alignment" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/pfld" vcs="Git" />
+  </component>
+</project>

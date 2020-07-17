@@ -39,7 +39,45 @@ def faceDetectionCenterFace(img:np.array,landmarks=True):
         if len(bbox) > 0:
             newImg = crop(img,bbox[0])
             return newImg, bbox[0]
+        else:
+            return "zero",[]
+    else:
+        return "zero",[]
 
+
+def faceDetectionCenterMutilFace(img: np.array, landmarks=True):
+    h, w = img.shape[:2]
+    centerFace = CenterFace(landmarks=landmarks)
+    if landmarks:
+        dets, lms = centerFace(img, h, w, threshold=0.6)
+    else:
+        dets = centerFace(img, threshold=0.6)
+
+    imgs = {}
+    if len(dets) > 0:
+        bbox = []
+        scores = []
+        for det in dets:
+            boxes, score = det[:4], det[4]
+            boxes = list(map(lambda x: int(x), boxes))
+            score = round(score, 3)
+            boxes = fixBox(boxes)
+            x1 = boxes[0]
+            y1 = boxes[1]
+            x2 = boxes[2]
+            y2 = boxes[3]
+            boxes = [x1, y1, x2, y2]
+            bbox.append(boxes)
+            scores.append(score)
+        if len(bbox) > 0:
+            for singleBox in bbox:
+                newImg = crop(img, singleBox)
+                imgs[tuple(singleBox)] = newImg
+            return imgs
+        else:
+            return imgs
+    else:
+        return imgs
 
 if __name__ == "__main__":
     # imgPath = "testImage/1.jpg"

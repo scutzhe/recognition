@@ -2,7 +2,7 @@ import os
 import cv2
 from math import cos, sin, log
 from fsaLib.FSANET_model import *
-from faceDetection import faceDetectionCenterFace
+from faceDetection import faceDetectionCenterFace,faceDetectionCenterMutilFace
 from keras.layers import Average
 
 def draw_axis(img, yaw, pitch, roll, tdx=None, tdy=None, size = 50):
@@ -316,29 +316,69 @@ def recover(x):
 #     print("num_pre=",num_pre)
 
 
+# if __name__ == '__main__':
+#     cv2.ocl.setUseOpenCL(False)
+#     weightPath1 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_capsule_3_16_2_21_5/fsanet_capsule_3_16_2_21_5.h5'
+#     weightPath2 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_var_capsule_3_16_2_21_5/fsanet_var_capsule_3_16_2_21_5.h5'
+#     weightPath3 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_noS_capsule_3_16_2_192_5/fsanet_noS_capsule_3_16_2_192_5.h5'
+#     model = createModel(weightPath1,weightPath2,weightPath3)
+#     # videoDir = "/home/zhex/Videos/profileFace/outdoor"
+#     # for videoName in os.listdir(videoDir):
+#     # videoPath = os.path.join(videoDir,videoName)
+#     videoPath = "/home/zhex/Videos/profileFace/outdoor/709.mp4"
+#     videoName = "709.mp4"
+#     vid = cv2.VideoCapture(videoPath)
+#     fourcc = cv2.VideoWriter_fourcc(*'XVID')
+#     out = cv2.VideoWriter(videoName,fourcc,25,(2560,1440))
+#     while True:
+#         flag, frame = vid.read()
+#         # print(frame.shape)
+#         if flag:
+#             img = cv2.resize(frame,(0,0),fx=0.5,fy=0.5,interpolation=cv2.INTER_CUBIC)
+#             newImg,box = faceDetectionCenterFace(img)
+#             if newImg != "zero" and box != []:
+#                 x1,y1 = box[0],box[1]
+#                 # yaw = angleDetection(newImg)
+#                 yaw = angleNoDetection(newImg)
+#                 print("yaw=",yaw)
+#                 cv2.putText(frame,str(yaw),(2*x1,2*y1),cv2.FONT_HERSHEY_SIMPLEX,2,(0,0,255),2)
+#                 out.write(frame)
+#                 # cv2.imshow("frame",frame)
+#                 # cv2.waitKey(1)
+#             else:
+#                 continue
+#         else:
+#             break
+
 if __name__ == '__main__':
     cv2.ocl.setUseOpenCL(False)
     weightPath1 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_capsule_3_16_2_21_5/fsanet_capsule_3_16_2_21_5.h5'
     weightPath2 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_var_capsule_3_16_2_21_5/fsanet_var_capsule_3_16_2_21_5.h5'
     weightPath3 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_noS_capsule_3_16_2_192_5/fsanet_noS_capsule_3_16_2_192_5.h5'
     model = createModel(weightPath1,weightPath2,weightPath3)
-    videoDir = "/home/zhex/Videos/profileFace/"
-    for videoName in os.listdir(videoDir):
-        videoPath = os.path.join(videoDir,videoName)
-        vid = cv2.VideoCapture(videoPath)
-        fourcc = cv2.VideoWriter_fourcc(*'XVID')
-        out = cv2.VideoWriter(videoName,fourcc,10,(2560,1440))
-        while True:
-            flag, frame = vid.read()
-            # print(frame.shape)
-            if flag:
-                img = cv2.resize(frame,(0,0),fx=0.5,fy=0.5,interpolation=cv2.INTER_CUBIC)
-                newImg,box = faceDetectionCenterFace(img)
-                x1,y1 = box[0],box[1]
-                # yaw = angleDetection(newImg)
-                yaw = angleNoDetection(newImg)
-                print("yaw=",yaw)
-                cv2.putText(frame,str(yaw),(2*x1,2*y1),cv2.FONT_HERSHEY_SIMPLEX,2,(0,0,255),2)
-                out.write(frame)
-                cv2.imshow("frame",frame)
-                cv2.waitKey(1)
+    videoDir = "/home/zhex/Videos/profileFace/outdoor"
+    # for videoName in os.listdir(videoDir):
+    #     videoPath = os.path.join(videoDir,videoName)
+    videoPath = "/home/zhex/Videos/profileFace/outdoor/709.mp4"
+    videoName = "709_2.mp4"
+    vid = cv2.VideoCapture(videoPath)
+    fourcc = cv2.VideoWriter_fourcc(*'XVID')
+    out = cv2.VideoWriter(videoName,fourcc,25,(2560,1440))
+    while True:
+        flag, frame = vid.read()
+        # print(frame.shape)
+        if flag:
+            img = cv2.resize(frame,(0,0),fx=0.5,fy=0.5,interpolation=cv2.INTER_CUBIC)
+            imgDict = faceDetectionCenterMutilFace(img)
+            if len(imgDict)>0:
+               for key,value in imgDict.items():
+                    yaw = angleNoDetection(value)
+                    print("yaw=",yaw)
+                    cv2.putText(frame,str(yaw),(2*key[0],2*key[1]),cv2.FONT_HERSHEY_SIMPLEX,2,(0,0,255),2)
+                    out.write(frame)
+                    # cv2.imshow("frame",frame)
+                    # cv2.waitKey(1)
+            else:
+                continue
+        else:
+            break

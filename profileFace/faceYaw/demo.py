@@ -50,12 +50,27 @@ def yawCoefficient(yaw:float):
     coefficient = sigmoid(midValue)
     return coefficient
 
+def angleNoDetection(img,):
+    """
+    :param img:
+    :return:
+    """
+    # angle(detected,img,faces,ad,img_size,img_w,img_h,model)
+    imgNew = cv2.resize(img,(64,64),interpolation=cv2.INTER_CUBIC)
+    imgNew = np.expand_dims(imgNew,axis=0)
+    p_result = model.predict(imgNew)
+    yaw = p_result[0][0]
+    pitch = p_result[0][1]
+    roll = p_result[0][2]
+    return yaw
+
+
 def angle(detected,input_img,faces,ad,img_size,img_w,img_h,model):
     """
     @param detected:
     @param input_img:
     @param faces:
-    @param ad:
+    @param ad: 0.6
     @param img_size:
     @param img_w:
     @param img_h:
@@ -85,6 +100,7 @@ def angle(detected,input_img,faces,ad,img_size,img_w,img_h,model):
                 x2 = x1 + w
                 y2 = y1 + h
 
+                # amplify face box
                 xw1 = max(int(x1 - ad * w), 0)
                 yw1 = max(int(y1 - ad * h), 0)
                 xw2 = min(int(x2 + ad * w), img_w - 1)
@@ -93,11 +109,15 @@ def angle(detected,input_img,faces,ad,img_size,img_w,img_h,model):
                 if xw1 > xw2 or yw1 > yw2:
                     continue
                 # print("xw1,yw1,xw2,yw2=",xw1,yw1,xw2,yw2)
+                # cv2.rectangle(img,(xw1,yw1),(xw2,yw2),(255,0,0),2)
+                # cv2.imshow("img",img)
+                # cv2.waitKey(5000)
 
                 faces[i, :, :, :] = cv2.resize(input_img[yw1:yw2 + 1, xw1:xw2 + 1, :], (img_size, img_size))
                 faces[i, :, :, :] = cv2.normalize(faces[i, :, :, :], None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX)
 
                 face = np.expand_dims(faces[i, :, :, :], axis=0)
+                # print("face.shape=",face.shape)
                 p_result = model.predict(face)
                 yaw = p_result[0][0]
                 pitch = p_result[0][1]
@@ -139,7 +159,7 @@ def draw_results_ssd(detected,input_img,faces,ad,img_size,img_w,img_h,model,time
                 
                 face = np.expand_dims(faces[i,:,:,:], axis=0)
                 p_result = model.predict(face)
-                face = face.squeeze()
+                face = face.squeeze() # squeeze dims=1
                 img = draw_axis(input_img[yw1:yw2 + 1, xw1:xw2 + 1, :], p_result[0][0], p_result[0][1], p_result[0][2])
                 input_img[yw1:yw2 + 1, xw1:xw2 + 1, :] = img
                 
@@ -213,6 +233,7 @@ def angleDetection(img:np.array):
     blob = cv2.dnn.blobFromImage(cv2.resize(img, (300, 300)), 1.0,(300, 300), (104.0, 177.0, 123.0))
     net.setInput(blob)
     detected = net.forward()
+    # print("detected.shape=",detected.shape)
 
     if detected_pre.shape[2] > 0 and detected.shape[2] == 0:
         detected = detected_pre
@@ -250,7 +271,19 @@ def recover(x):
     radian = (log(x/(1-x)) + 1) * np.pi / 4
     angle = radian * 180 / np.pi
     return angle
-        
+
+# if __name__ == "__main__":
+#     weightPath1 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_capsule_3_16_2_21_5/fsanet_capsule_3_16_2_21_5.h5'
+#     weightPath2 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_var_capsule_3_16_2_21_5/fsanet_var_capsule_3_16_2_21_5.h5'
+#     weightPath3 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_noS_capsule_3_16_2_192_5/fsanet_noS_capsule_3_16_2_192_5.h5'
+#     model = createModel(weightPath1,weightPath2,weightPath3)
+#     imgPath = "testImage/1.jpg"
+#     img = cv2.imread(imgPath)
+#     # yaw = angleDetection(img)
+#     yaw = angleNoDetection(img)
+#     print("yaw=",yaw)
+
+
 # if __name__ == '__main__':
 #     weightPath1 = 'pre-trained/300W_LP_models/fsanet_capsule_3_16_2_21_5/fsanet_capsule_3_16_2_21_5.h5'
 #     weightPath2 = 'pre-trained/300W_LP_models/fsanet_var_capsule_3_16_2_21_5/fsanet_var_capsule_3_16_2_21_5.h5'
@@ -284,6 +317,7 @@ def recover(x):
 
 
 if __name__ == '__main__':
+    cv2.ocl.setUseOpenCL(False)
     weightPath1 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_capsule_3_16_2_21_5/fsanet_capsule_3_16_2_21_5.h5'
     weightPath2 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_var_capsule_3_16_2_21_5/fsanet_var_capsule_3_16_2_21_5.h5'
     weightPath3 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_noS_capsule_3_16_2_192_5/fsanet_noS_capsule_3_16_2_192_5.h5'
@@ -292,23 +326,19 @@ if __name__ == '__main__':
     for videoName in os.listdir(videoDir):
         videoPath = os.path.join(videoDir,videoName)
         vid = cv2.VideoCapture(videoPath)
-        # fourcc = cv2.VideoWriter_fourcc(*'XVID')
-        # out = cv2.VideoWriter(videoName,fourcc,10,(2560,1440))
+        fourcc = cv2.VideoWriter_fourcc(*'XVID')
+        out = cv2.VideoWriter(videoName,fourcc,10,(2560,1440))
         while True:
             flag, frame = vid.read()
-            print("frame.shape=",frame.shape)
+            # print(frame.shape)
             if flag:
-                newImg = faceDetectionCenterFace(frame)
-                print(newImg)
-                if newImg == "error":
-                    continue
-                else:
-                    cv2.imshow("newImg", newImg)
-                    cv2.waitKey(1000)
-                    # yaw = angleDetection(newImg)
-                    # cv2.putText(frame,str(yaw),(100,100),cv2.FONT_HERSHEY_SIMPLEX,2,(0,0,255),2)
-                    # out.write(frame)
-                    cv2.imshow("frame",frame)
-                    cv2.waitKey(1)
-            else:
-                break
+                img = cv2.resize(frame,(0,0),fx=0.5,fy=0.5,interpolation=cv2.INTER_CUBIC)
+                newImg,box = faceDetectionCenterFace(img)
+                x1,y1 = box[0],box[1]
+                # yaw = angleDetection(newImg)
+                yaw = angleNoDetection(newImg)
+                print("yaw=",yaw)
+                cv2.putText(frame,str(yaw),(2*x1,2*y1),cv2.FONT_HERSHEY_SIMPLEX,2,(0,0,255),2)
+                out.write(frame)
+                cv2.imshow("frame",frame)
+                cv2.waitKey(1)

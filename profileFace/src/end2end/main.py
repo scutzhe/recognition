@@ -15,8 +15,8 @@ import torchvision.datasets as datasets
 import torchvision.models as models
 import torchvision.transforms as transforms
 
-from ResNet import resnet18, resnet34, resnet50, resnet101, resnet152
-from selfDefine import MsCelebDataset, CaffeCrop
+from backbone.ResNet import resnet18, resnet34, resnet50, resnet101, resnet152
+from backbone.selfDefine import MsCelebDataset, CaffeCrop
 
 model_names = sorted(name for name in models.__dict__
     if name.islower() and not name.startswith("__")

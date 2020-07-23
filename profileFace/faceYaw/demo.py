@@ -290,15 +290,20 @@ if __name__ == '__main__':
     weightPath2 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_var_capsule_3_16_2_21_5/fsanet_var_capsule_3_16_2_21_5.h5'
     weightPath3 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_noS_capsule_3_16_2_192_5/fsanet_noS_capsule_3_16_2_192_5.h5'
     model = createModel(weightPath1,weightPath2,weightPath3)
-    rootPath = "/home/zhex/data/imgs_glintasia"
-    trainImage = open("originImage.txt","a")
-    trainLable = open("originLabel.txt","a")
-    num_act = 0
-    num_pre = 0
-    IDs = os.listdir(rootPath)
-    IDs.sort(key=lambda x: int(x))
-    for id in tqdm(IDs):
-        imgDir = os.path.join(rootPath, id)
+    trainRootPath = "/home/zhex/data/profileAsia/train"
+    trainImage = open("trainImage.txt","a")
+    trainLable = open("trainLabel.txt","a")
+    valRootPath = "/home/zhex/data/profileAsia/val"
+    valImage = open("valImage.txt","a")
+    valLable = open("valLabel.txt","a")
+    num_act_train = 0
+    num_pre_train = 0
+    num_act_val = 0
+    num_pre_val = 0
+    IDsTrain = os.listdir(trainRootPath)
+    IDsTrain.sort(key=lambda x: int(x))
+    for id in tqdm(IDsTrain):
+        imgDir = os.path.join(trainRootPath, id)
         # print("imgDir=",imgDir)
         imgPaths = os.listdir(imgDir)
         # print("imgPaths=",imgPaths)
@@ -312,7 +317,7 @@ if __name__ == '__main__':
             writePath = str(imgPath.split("/")[-2]) + "/" + str(imgPath.split("/")[-1])
             trainImage.write(writePath + "\n")
             trainImage.flush()
-            num_act += 1
+            num_act_train += 1
             imgBGR = cv2.imread(imgPath)
             imgRGB = cv2.cvtColor(imgBGR,cv2.COLOR_BGR2RGB)
             try:
@@ -320,13 +325,86 @@ if __name__ == '__main__':
                 yaw = angleNoDetection(imgRGB)
                 coefficient = yawCoefficient(abs(yaw))
                 # print("coefficient=",coefficient)
-                num_pre += 1
+                num_pre_train += 1
                 trainLable.write(ID + " " + str(coefficient)+ "\n")
                 trainLable.flush()
             except Exception as e:
                 print(e)
-    print("num_act=",num_act)
-    print("num_pre=",num_pre)
+    IDsVal = os.listdir(trainRootPath)
+    IDsVal.sort(key=lambda x: int(x))
+    for id in tqdm(IDsVal):
+        imgDir = os.path.join(trainRootPath, id)
+        # print("imgDir=",imgDir)
+        imgPaths = os.listdir(imgDir)
+        # print("imgPaths=",imgPaths)
+        imgPaths.sort(key=lambda x: int(x[:-4]))
+        # print("imgPaths=", imgPaths)
+        for imgName in imgPaths:
+            imgPath = os.path.join(imgDir, imgName)
+            # print("imgPath=",imgPath)
+            ID = str(imgPath.split("/")[-2])
+            # print("ID=",ID)
+            writePath = str(imgPath.split("/")[-2]) + "/" + str(imgPath.split("/")[-1])
+            valImage.write(writePath + "\n")
+            valImage.flush()
+            num_act_train += 1
+            imgBGR = cv2.imread(imgPath)
+            imgRGB = cv2.cvtColor(imgBGR, cv2.COLOR_BGR2RGB)
+            try:
+                # coefficient = angleDetection(imgRGB)
+                yaw = angleNoDetection(imgRGB)
+                coefficient = yawCoefficient(abs(yaw))
+                # print("coefficient=",coefficient)
+                num_pre_train += 1
+                valLable.write(ID + " " + str(coefficient) + "\n")
+                valLable.flush()
+            except Exception as e:
+                print(e)
+    print("num_act_train=",num_act_train)
+    print("num_pre_train=",num_pre_train)
+
+# if __name__ == '__main__':
+#     weightPath1 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_capsule_3_16_2_21_5/fsanet_capsule_3_16_2_21_5.h5'
+#     weightPath2 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_var_capsule_3_16_2_21_5/fsanet_var_capsule_3_16_2_21_5.h5'
+#     weightPath3 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_noS_capsule_3_16_2_192_5/fsanet_noS_capsule_3_16_2_192_5.h5'
+#     model = createModel(weightPath1,weightPath2,weightPath3)
+#     rootPath = "/home/zhex/data/imgs_glintasia"
+#     trainImage = open("originImage.txt","a")
+#     trainLable = open("originLabel.txt","a")
+#     num_act = 0
+#     num_pre = 0
+#     IDs = os.listdir(rootPath)
+#     IDs.sort(key=lambda x: int(x))
+#     for id in tqdm(IDs):
+#         imgDir = os.path.join(rootPath, id)
+#         # print("imgDir=",imgDir)
+#         imgPaths = os.listdir(imgDir)
+#         # print("imgPaths=",imgPaths)
+#         imgPaths.sort(key=lambda x:int(x[:-4]))
+#         # print("imgPaths=", imgPaths)
+#         for imgName in imgPaths:
+#             imgPath = os.path.join(imgDir,imgName)
+#             # print("imgPath=",imgPath)
+#             ID = str(imgPath.split("/")[-2])
+#             # print("ID=",ID)
+#             writePath = str(imgPath.split("/")[-2]) + "/" + str(imgPath.split("/")[-1])
+#             trainImage.write(writePath + "\n")
+#             trainImage.flush()
+#             num_act += 1
+#             imgBGR = cv2.imread(imgPath)
+#             imgRGB = cv2.cvtColor(imgBGR,cv2.COLOR_BGR2RGB)
+#             try:
+#                 # coefficient = angleDetection(imgRGB)
+#                 yaw = angleNoDetection(imgRGB)
+#                 coefficient = yawCoefficient(abs(yaw))
+#                 # print("coefficient=",coefficient)
+#                 num_pre += 1
+#                 trainLable.write(ID + " " + str(coefficient)+ "\n")
+#                 trainLable.flush()
+#             except Exception as e:
+#                 print(e)
+#     print("num_act=",num_act)
+#     print("num_pre=",num_pre)
 
 # if __name__ == '__main__':
 #     weightPath1 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_capsule_3_16_2_21_5/fsanet_capsule_3_16_2_21_5.h5'

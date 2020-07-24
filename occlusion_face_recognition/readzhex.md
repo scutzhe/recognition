@@ -1,0 +1,9 @@
+1. 人脸识别侧脸识别数据集制作  
+1.1 侧脸数据集原始数据集亚洲名人数据集  
+1.2 侧脸偏航角计算算法:FaceYaw(FSANET)demo.py(newest)生成trainImage.txt,trainLabel.txt,valImage.txt,valLabel.txt  
+1.3 切分数据集为训练集和验证集splitDataset.py(注意shutil.copytree()的用法细节)  
+2. 合成dream算法和ArcFace算法组建新的算法  
+3. 训练技巧  
+3.1 先用小数据集验证超参,具体使用验证集试探
+4. 问题  
+4.1 亚洲名人数据集存在数据分布不均的问题,即:有的ID数量极少只有几个,有的ID数量特别多上千  

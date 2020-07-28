@@ -70,11 +70,10 @@ def make_weights_for_balanced_classes(images, nclasses):
 
 
 def get_val_pair(path, name):
-    carray = bcolz.carray(rootdir = os.path.join(path, name), mode = 'r')
+    carray = bcolz.carray(rootdir = os.path.join(path, name), mode = 'r') # store data
     issame = np.load('{}/{}_list.npy'.format(path, name))
 
     return carray, issame
-
 
 def get_val_data(data_path):
     lfw, lfw_issame = get_val_pair(data_path, 'lfw')
@@ -84,6 +83,24 @@ def get_val_data(data_path):
     calfw, calfw_issame = get_val_pair(data_path, 'calfw')
     cplfw, cplfw_issame = get_val_pair(data_path, 'cplfw')
     vgg2_fp, vgg2_fp_issame = get_val_pair(data_path, 'vgg2_fp')
+
+    return lfw, cfp_ff, cfp_fp, agedb_30, calfw, cplfw, vgg2_fp, lfw_issame, cfp_ff_issame, cfp_fp_issame, agedb_30_issame, calfw_issame, cplfw_issame, vgg2_fp_issame
+
+def get_val_pair_yaw(path, calculationWay, name):
+    carray = bcolz.carray(rootdir = os.path.join(path, name), mode = 'r') # store data
+    issame = np.load('{}/{}_list.npy'.format(path, name))
+    yaw = np.load("{}/yaw_{}_npy/{}_yaw.npy".format(path, calculationWay, name))
+
+    return carray, issame, yaw
+
+def get_val_data_yaw(data_path, calculationWay):
+    lfw, lfw_issame, yaw = get_val_pair_yaw(data_path, calculationWay, 'lfw')
+    cfp_ff, cfp_ff_issame, yaw = get_val_pair_yaw(data_path, calculationWay, 'cfp_ff')
+    cfp_fp, cfp_fp_issame, yaw = get_val_pair_yaw(data_path, calculationWay, 'cfp_fp')
+    agedb_30, agedb_30_issame, yaw = get_val_pair_yaw(data_path, calculationWay, 'agedb_30')
+    calfw, calfw_issame, yaw = get_val_pair_yaw(data_path, calculationWay, 'calfw')
+    cplfw, cplfw_issame, yaw = get_val_pair_yaw(data_path, calculationWay, 'cplfw')
+    vgg2_fp, vgg2_fp_issame, yaw = get_val_pair_yaw(data_path, calculationWay, 'vgg2_fp')
 
     return lfw, cfp_ff, cfp_fp, agedb_30, calfw, cplfw, vgg2_fp, lfw_issame, cfp_ff_issame, cfp_fp_issame, agedb_30_issame, calfw_issame, cplfw_issame, vgg2_fp_issame
 
@@ -184,7 +201,6 @@ def gen_plot(fpr, tpr):
     plt.savefig(buf, format = 'jpeg')
     buf.seek(0)
     plt.close()
-
     return buf
 
 
@@ -197,13 +213,15 @@ def perform_val(multi_gpu, device, embedding_size, batch_size, backbone, carray,
     backbone.eval()  # switch to evaluation mode
 
     idx = 0
-    embeddings = np.zeros([len(carray), embedding_size])
+    embeddings = np.zeros([len(carray), embedding_size]) # num * 512
     with torch.no_grad():
         while idx + batch_size <= len(carray):
             batch = torch.tensor(carray[idx:idx + batch_size][:, [2, 1, 0], :, :])
             if tta:
                 ccropped = ccrop_batch(batch)
                 fliped = hflip_batch(ccropped)
+                # emb_batch = backbone(ccropped.to(device)).cpu() + backbone(fliped.to(device)).cpu()
+                # here !!! need  modification for yaw parameters
                 emb_batch = backbone(ccropped.to(device)).cpu() + backbone(fliped.to(device)).cpu()
                 embeddings[idx:idx + batch_size] = l2_norm(emb_batch)
             else:
@@ -220,6 +238,54 @@ def perform_val(multi_gpu, device, embedding_size, batch_size, backbone, carray,
             else:
                 ccropped = ccrop_batch(batch)
                 embeddings[idx:] = l2_norm(backbone(ccropped.to(device))).cpu()
+
+    tpr, fpr, accuracy, best_thresholds = evaluate(embeddings, issame, nrof_folds)
+    buf = gen_plot(fpr, tpr)
+    roc_curve = Image.open(buf)
+    roc_curve_tensor = transforms.ToTensor()(roc_curve)
+
+    return accuracy.mean(), best_thresholds.mean(), roc_curve_tensor
+
+def perform_val_yaw(multi_gpu, device, embedding_size, batch_size, backbone, carray, issame, yaw, nrof_folds=10, tta=True):
+    if multi_gpu:
+        backbone = backbone.module # unpackage model from DataParallel
+        backbone = backbone.to(device)
+    else:
+        backbone = backbone.to(device)
+    backbone.eval()  # switch to evaluation mode
+
+    idx = 0
+    embeddings = np.zeros([len(carray), embedding_size]) # num * 512
+    with torch.no_grad():
+        while idx + batch_size <= len(carray):
+            batch = torch.tensor(carray[idx:idx + batch_size][:, [2, 1, 0], :, :])
+            # add yaw parameters
+            yaw = torch.tensor(yaw[idx:idx + batch_size])
+            if tta:
+                ccropped = ccrop_batch(batch)
+                fliped = hflip_batch(ccropped)
+                # emb_batch = backbone(ccropped.to(device)).cpu() + backbone(fliped.to(device)).cpu()
+                # here !!! need  modification for yaw parameters
+                emb_batch = backbone(ccropped.to(device),yaw.to(device)).cpu() + backbone(fliped.to(device), yaw.to(device)).cpu()
+                embeddings[idx:idx + batch_size] = l2_norm(emb_batch)
+            else:
+                ccropped = ccrop_batch(batch)
+                # embeddings[idx:idx + batch_size] = l2_norm(backbone(ccropped.to(device))).cpu()
+                embeddings[idx:idx + batch_size] = l2_norm(backbone(ccropped.to(device), yaw.to(device))).cpu()
+            idx += batch_size
+        if idx < len(carray):
+            batch = torch.tensor(carray[idx:])
+            yaw = torch.tensor(yaw[idx:])
+            if tta:
+                ccropped = ccrop_batch(batch)
+                fliped = hflip_batch(ccropped)
+                # emb_batch = backbone(ccropped.to(device)).cpu() + backbone(fliped.to(device)).cpu()
+                emb_batch = backbone(ccropped.to(device), yaw.to(device)).cpu() + backbone(fliped.to(device), yaw.to(device)).cpu()
+                embeddings[idx:] = l2_norm(emb_batch)
+            else:
+                ccropped = ccrop_batch(batch)
+                # embeddings[idx:] = l2_norm(backbone(ccropped.to(device))).cpu()
+                embeddings[idx:] = l2_norm(backbone(ccropped.to(device), yaw.to(device))).cpu()
 
     tpr, fpr, accuracy, best_thresholds = evaluate(embeddings, issame, nrof_folds)
     buf = gen_plot(fpr, tpr)

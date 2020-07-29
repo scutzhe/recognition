@@ -11,6 +11,7 @@
     sampler = torch.utils.data.distributed.DistributedSampler(...)  
     train_loader = torch.utils.data.DataLoader(...sampler=sampler, pin_memory=True, shuffle=False...)    
     数据集总共9万+ID,280万张图片,单卡训练太慢,多卡分布式训练使用pytorch这个接口函数非常方便,实际训练中epoch/0.5h  
+3.4 81/100 epoch Loss 0.088 (mean:0.090)	Prec@1 91.964 (mean:90.692)	Prec@5 95.982 (mean:95.497)
 4. 验证集问题  
 4.1 evoLve_val_dataset.zip该文件是压缩文件以及有对应的验证集处理代码  
 5. 问题  

@@ -260,7 +260,8 @@ def perform_val_yaw(multi_gpu, device, embedding_size, batch_size, backbone, car
         while idx + batch_size <= len(carray):
             batch = torch.tensor(carray[idx:idx + batch_size][:, [2, 1, 0], :, :])
             # add yaw parameters
-            yaw = torch.tensor(yaw[idx:idx + batch_size])
+            yaw = torch.tensor(yaw[idx:idx + batch_size]) # yaw.size() = (batch_size,)
+            yaw = yaw.unsqueeze(1) # yaw.size()=(batch_size,1)
             if tta:
                 ccropped = ccrop_batch(batch)
                 fliped = hflip_batch(ccropped)

@@ -82,13 +82,7 @@ def train(gpu, args):
     trainImage = cfg["TRAIN_IMAGE"]
     trainLabel = cfg["TRAIN_LABEL"]
 
-    # valDataDir = cfg["VAL_DATA_DIR"]
-    # valImage = cfg["VAL_IMAGE"]
-    # valLabel = cfg["VAL_LABEL"]
-    printFrequency = cfg["FREQUENCY"]
-
-    yaw_blp_npy = cfg["YAW_BLP_ROOT"]
-    yaw_img_npy = cfg["YAW_IMG_ROOT"]
+    valDataDir = cfg["VAL_DATA_DIR"]
 
     model_root = cfg['MODEL_ROOT']
     # support: ResNet_50, ResNet_101, ResNet_152, IR_50, IR_101, IR_152, IR_SE_50, IR_SE_101, IR_SE_152
@@ -136,11 +130,11 @@ def train(gpu, args):
         transforms.Normalize(mean=rgb_mean, std=rgb_std),
     ])
 
-    valTransform = transforms.Compose([
-        transforms.Resize(input_size),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=rgb_mean, std=rgb_std),
-    ])
+    # valTransform = transforms.Compose([
+    #     transforms.Resize(input_size),
+    #     transforms.ToTensor(),
+    #     transforms.Normalize(mean=rgb_mean, std=rgb_std),
+    # ])
 
     # dataset_train = datasets.ImageFolder(os.path.join(data_root, data_name), train_transform)
     # load data and prepare dataset
@@ -187,19 +181,19 @@ def train(gpu, args):
     if gpu is 0:
         logger.info("Number of Training Classes: {}".format(num_class))
     if gpu is 0:
-        lfw, lfw_issame = get_val_pair_yaw(data_root, 'lfw')
+        lfw, lfw_isSame, yaw = get_val_pair_yaw(valDataDir, "image", 'lfw')
     if gpu is 1:
-        cfp_ff, cfp_ff_issame = get_val_pair_yaw(data_root, 'cfp_ff')
+        cfp_ff, cfp_ff_isSame, yaw = get_val_pair_yaw(valDataDir, "image", 'cfp_ff')
     if gpu is 2:
-        cfp_fp, cfp_fp_issame = get_val_pair_yaw(data_root, 'cfp_fp')
+        cfp_fp, cfp_fp_isSame, yaw = get_val_pair_yaw(valDataDir, "image", 'cfp_fp')
     if gpu is 3:
-        cplfw, cplfw_issame = get_val_pair_yaw(data_root, 'cplfw')
+        cplfw, cplfw_isSame, yaw = get_val_pair_yaw(valDataDir, "image", 'cplfw')
     if gpu is 4:
-        vgg2_fp, vgg2_fp_issame = get_val_pair_yaw(data_root, 'vgg2_fp')
+        vgg2_fp, vgg2_fp_isSame, yaw = get_val_pair_yaw(valDataDir, "image", 'vgg2_fp')
     if gpu is 5:
-        agedb, agedb_issame = get_val_pair_yaw(data_root, 'agedb_30')
+        agedb, agedb_isSame, yaw = get_val_pair_yaw(valDataDir, "image", 'agedb_30')
     if gpu is 6:
-        calfw, calfw_issame = get_val_pair_yaw(data_root, 'calfw')
+        calfw, calfw_isSame, yaw = get_val_pair_yaw(valDataDir, "image",'calfw')
 
     # ======= model & loss & optimizer =======#
     if backbone_name == "IR_SE_DREAM_101":
@@ -372,14 +366,14 @@ def train(gpu, args):
             top1_record.clean()
             top5_record.clean()
 
+
         # perform validation & save checkpoints per epoch
         # validation statistics per epoch (buffer for visualization)
-
         if epoch % eval_epoch == eval_epoch-1:
             if gpu is 0:
                 acc_lfw, best_threshold_lfw, roc_curve_lfw = perform_val_yaw(False, torch.device(f"cuda:{gpu}"),
                                                                          embedding_size, batch_size,
-                                                                         backbone, lfw, lfw_issame)
+                                                                         backbone, lfw, lfw_isSame, yaw)
                 with SummaryWriter(log_root) as writer:
                     writer.add_scalar('{}_Accuracy'.format("LFW"), acc_lfw, epoch+1)
                 logger.info("=" * 60)
@@ -390,7 +384,7 @@ def train(gpu, args):
             if gpu is 1:
                 acc_cfp_ff, best_threshold_cfp_ff, roc_curve_cfp_ff = perform_val_yaw(False, torch.device(f"cuda:{gpu}"),
                                                                                   embedding_size, batch_size,
-                                                                                  backbone, cfp_ff, cfp_ff_issame)
+                                                                                  backbone, cfp_ff, cfp_ff_isSame, yaw)
                 with SummaryWriter(log_root) as writer:
                     writer.add_scalar('{}_Accuracy'.format("CFP_FF"), acc_cfp_ff, epoch + 1)
                 logger.info("=" * 60)
@@ -401,7 +395,7 @@ def train(gpu, args):
             if gpu is 2:
                 acc_cfp_fp, best_threshold_cfp_fp, roc_curve_cfp_fp = perform_val_yaw(False, torch.device(f"cuda:{gpu}"),
                                                                                   embedding_size, batch_size,
-                                                                                  backbone, cfp_fp, cfp_fp_issame)
+                                                                                  backbone, cfp_fp, cfp_fp_isSame, yaw)
                 with SummaryWriter(log_root) as writer:
                     writer.add_scalar('{}_Accuracy'.format("CFP_FP"), acc_cfp_fp, epoch + 1)
                 logger.info("=" * 60)
@@ -412,7 +406,7 @@ def train(gpu, args):
             if gpu is 3:
                 acc_cplfw, best_threshold_cplfw, roc_curve_cplfw = perform_val_yaw(False, torch.device(f"cuda:{gpu}"),
                                                                                embedding_size, batch_size,
-                                                                               backbone, cplfw, cplfw_issame)
+                                                                               backbone, cplfw, cplfw_isSame, yaw)
                 with SummaryWriter(log_root) as writer:
                     writer.add_scalar('{}_Accuracy'.format("CPLFW"), acc_cplfw, epoch + 1)
                 logger.info("=" * 60)
@@ -423,7 +417,7 @@ def train(gpu, args):
             if gpu is 4:
                 acc_vgg2_fp, best_threshold_vgg2_fp, roc_curve_vgg2_fp = perform_val_yaw(False, torch.device(f"cuda:{gpu}"),
                                                                                      embedding_size, batch_size,
-                                                                                     backbone, vgg2_fp, vgg2_fp_issame)
+                                                                                     backbone, vgg2_fp, vgg2_fp_isSame, yaw)
                 with SummaryWriter(log_root) as writer:
                     writer.add_scalar('{}_Accuracy'.format("VGGFace2_FP"), acc_vgg2_fp, epoch + 1)
                 logger.info("=" * 60)
@@ -434,7 +428,7 @@ def train(gpu, args):
             if gpu is 5:
                 acc_agedb, best_threshold_agedb, roc_curve_agedb = perform_val_yaw(False, torch.device(f"cuda:{gpu}"),
                                                                                embedding_size, batch_size,
-                                                                               backbone, agedb, agedb_issame)
+                                                                               backbone, agedb, agedb_isSame, yaw)
                 with SummaryWriter(log_root) as writer:
                     writer.add_scalar('{}_Accuracy'.format("AgeDB"), acc_agedb, epoch + 1)
                 logger.info("=" * 60)
@@ -445,7 +439,7 @@ def train(gpu, args):
             if gpu is 6:
                 acc_calfw, best_threshold_calfw, roc_curve_calfw = perform_val_yaw(False, torch.device(f"cuda:{gpu}"),
                                                                                embedding_size, batch_size,
-                                                                               backbone, calfw, calfw_issame)
+                                                                               backbone, calfw, calfw_isSame, yaw)
                 with SummaryWriter(log_root) as writer:
                     writer.add_scalar('{}_Accuracy'.format("CALFW"), acc_calfw, epoch + 1)
                 logger.info("=" * 60)
@@ -453,16 +447,6 @@ def train(gpu, args):
                             f" Threshold: {best_threshold_calfw:.3f}")
                 logger.info("=" * 60)
 
-            if gpu is 7:
-                acc_calfw, best_threshold_calfw, roc_curve_calfw = perform_val_yaw(False, torch.device(f"cuda:{gpu}"),
-                                                                               embedding_size, batch_size,
-                                                                               backbone, calfw, calfw_issame)
-                with SummaryWriter(log_root) as writer:
-                    writer.add_scalar('{}_Accuracy'.format("CALFW"), acc_calfw, epoch + 1)
-                logger.info("=" * 60)
-                logger.info(f"Epoch {epoch + 1}/{num_epoch}, Evaluation Acc: CALFW: {acc_calfw:.5f}"
-                            f" Threshold: {best_threshold_calfw:.3f}")
-                logger.info("=" * 60)
 
         # if epoch % eval_epoch == eval_epoch-1:
         #     if gpu is 0:

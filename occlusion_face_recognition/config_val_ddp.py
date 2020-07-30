@@ -24,9 +24,9 @@ configurations = {
 
         # the root to resume training from a saved checkpoint
         # BACKBONE_RESUME_ROOT='',
-        BACKBONE_RESUME_ROOT='model/2020-07-29-16-54_IR_SE_DREAM_101_Epoch_87_LOSS_0.026.pth',
+        BACKBONE_RESUME_ROOT='model/2020-07-29-17-50_IR_SE_DREAM_101_Epoch_89_LOSS_0.021.pth',
         # the root to resume training from a saved checkpoint
-        HEAD_RESUME_ROOT='model/2020-07-29-16-54_ArcFace_Epoch_87_LOSS_0.026.pth',
+        HEAD_RESUME_ROOT='model/2020-07-29-17-50_ArcFace_Epoch_89_LOSS_0.021.pth',
 
         # support: ['ResNet_50', 'ResNet_101', 'ResNet_152',
         # 'IR_SE_50', 'IRSE_101', 'IR_152', 'IR_SE_50', 'IR_SE_101', 'IR_SE_152',
@@ -41,7 +41,7 @@ configurations = {
         RGB_STD=[0.5, 0.5, 0.5],
 
         EMBEDDING_SIZE=512,  # feature dimension
-        BATCH_SIZE=128,
+        BATCH_SIZE=64,
         DROP_LAST=True,  # whether drop the last batch to ensure consistent batch_norm statistics
         WEIGHT_DECAY=5e-4,  # do not apply to batch_norm parameters
         MOMENTUM=0.9,

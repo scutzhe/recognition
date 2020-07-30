@@ -11,13 +11,17 @@
     sampler = torch.utils.data.distributed.DistributedSampler(...)  
     train_loader = torch.utils.data.DataLoader(...sampler=sampler, pin_memory=True, shuffle=False...)    
     数据集总共9万+ID,280万张图片,单卡训练太慢,多卡分布式训练使用pytorch这个接口函数非常方便,实际训练中epoch/0.5h  
-3.4 81/100 epoch Loss 0.088 (mean:0.090)	Prec@1 91.964 (mean:90.692)	Prec@5 95.982 (mean:95.497)
+3.4 Epoch: 107/150 Batch 9125/188400  	
+3.5 Loss 0.007 (mean:0.005)	Prec@1 97.321 (mean:97.745)	Prec@5 99.107 (mean:99.133)	lr 1.00e-03  
 4. 验证集问题  
 4.1 evoLve_val_dataset.zip该文件是压缩文件以及有对应的验证集处理代码  
+4.2 cfp_fp正脸侧脸数据集还挺具有挑战性的,偏航角角度大,光线暗  
+4.3 vgg2_fp正脸侧脸数据集也挺具有挑战性的,偏航角角度大,光线暗  
 5. 问题  
 5.1 亚洲名人数据集存在数据分布不均的问题,即:有的ID数量极少只有几个,有的ID数量特别多上千  
 6. 小结  
 6.1 人脸识别目前采用ArcFace算法做,猜测可能原因:人脸是刚性的变化小,但是在行人重识别中使用三元组损失函数  
+6.2 编程变量命名中尽量不要对一个变量重复赋值(这个bug我魔改了一天才改成功)  
 
 人脸识别正脸识别算法  
 1. 在侧脸识别算法的基础上去掉偏航角  
@@ -28,10 +32,3 @@
 3.1 正脸侧脸在亚洲名人数据集上可通用,取亚洲名人数据集子集验证通过  
 4. 侧脸识别算法训练集制作  
 4.1 在另一个工程profileFace中,详见readme文件
-
-  
-warning  
-yaw = torch.tensor(yaw[idx:idx + batch_size])
-/home/zhengxiangzhong/work/occlusionFace/util/utils.py:263: UserWarning:   
-To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or   
-sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).

@@ -9,20 +9,25 @@
 # @desc    : 
 '''
 import os
+import shutil
 from tqdm import tqdm
-def renames(imageDir):
+def renames(imageDir,saveDir):
     """
     :param imageDir:
+    :param saveDir:
     :return:
     """
     assert os.path.exists(imageDir), "{} is null!!!".format(imageDir)
+    if not os.path.exists(saveDir):
+        os.makedirs(saveDir)
+
     ids = os.listdir(imageDir)
     index = 0
     for idName in tqdm(ids):
         idOldPath = os.path.join(imageDir,idName)
         newName = str(index)
-        idNewPath = os.path.join(imageDir,newName)
-        os.rename(idOldPath,idNewPath)
+        idNewPath = os.path.join(saveDir,newName)
+        shutil.copytree(idOldPath,idNewPath)
         index += 1
     print("index=",index)
 
@@ -53,6 +58,8 @@ def renamesTwo(imageDir):
 
 if __name__ == "__main__":
     trainImageDir = "/home/zhex/data/profileAsia/train"
+    trainSaveDir = "/home/zhex/data/profileNew/train"
     valImageDir = "/home/zhex/data/profileAsia/val"
-    renames(trainImageDir)
-    renames(valImageDir)
+    valSaveDir = "/home/zhex/data/profileNew/val"
+    # renames(trainImageDir,trainSaveDir)
+    renames(valImageDir,valSaveDir)

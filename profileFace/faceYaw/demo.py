@@ -285,21 +285,20 @@ def recover(x):
 #     yaw = angleNoDetection(imgRGB)
 #     print("yaw=",yaw)
 
+## newest
 if __name__ == '__main__':
     weightPath1 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_capsule_3_16_2_21_5/fsanet_capsule_3_16_2_21_5.h5'
     weightPath2 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_var_capsule_3_16_2_21_5/fsanet_var_capsule_3_16_2_21_5.h5'
     weightPath3 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_noS_capsule_3_16_2_192_5/fsanet_noS_capsule_3_16_2_192_5.h5'
     model = createModel(weightPath1,weightPath2,weightPath3)
-    trainRootPath = "/home/zhex/data/profileAsia/train"
+
+    trainRootPath = "/home/zhex/data/profileNew/train"
     trainImage = open("trainImage.txt","a")
     trainLable = open("trainLabel.txt","a")
-    valRootPath = "/home/zhex/data/profileAsia/val"
-    valImage = open("valImage.txt","a")
-    valLable = open("valLabel.txt","a")
+
     num_act_train = 0
     num_pre_train = 0
-    num_act_val = 0
-    num_pre_val = 0
+
     IDsTrain = os.listdir(trainRootPath)
     IDsTrain.sort(key=lambda x: int(x))
     for id in tqdm(IDsTrain):
@@ -330,10 +329,19 @@ if __name__ == '__main__':
                 trainLable.flush()
             except Exception as e:
                 print(e)
-    IDsVal = os.listdir(trainRootPath)
+
+    print("num_act_train=", num_act_train)
+    print("num_pre_train=", num_pre_train)
+
+    valRootPath = "/home/zhex/data/profileNew/val"
+    valImage = open("valImage.txt","a")
+    valLable = open("valLabel.txt","a")
+    num_act_val = 0
+    num_pre_val = 0
+    IDsVal = os.listdir(valRootPath)
     IDsVal.sort(key=lambda x: int(x))
     for id in tqdm(IDsVal):
-        imgDir = os.path.join(trainRootPath, id)
+        imgDir = os.path.join(valRootPath, id)
         # print("imgDir=",imgDir)
         imgPaths = os.listdir(imgDir)
         # print("imgPaths=",imgPaths)
@@ -347,7 +355,7 @@ if __name__ == '__main__':
             writePath = str(imgPath.split("/")[-2]) + "/" + str(imgPath.split("/")[-1])
             valImage.write(writePath + "\n")
             valImage.flush()
-            num_act_train += 1
+            num_act_val += 1
             imgBGR = cv2.imread(imgPath)
             imgRGB = cv2.cvtColor(imgBGR, cv2.COLOR_BGR2RGB)
             try:
@@ -355,13 +363,14 @@ if __name__ == '__main__':
                 yaw = angleNoDetection(imgRGB)
                 coefficient = yawCoefficient(abs(yaw))
                 # print("coefficient=",coefficient)
-                num_pre_train += 1
+                num_pre_val += 1
                 valLable.write(ID + " " + str(coefficient) + "\n")
                 valLable.flush()
             except Exception as e:
                 print(e)
-    print("num_act_train=",num_act_train)
-    print("num_pre_train=",num_pre_train)
+    print("num_act_val=",num_act_val)
+    print("num_pre_val=",num_pre_val)
+
 
 # if __name__ == '__main__':
 #     weightPath1 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_capsule_3_16_2_21_5/fsanet_capsule_3_16_2_21_5.h5'

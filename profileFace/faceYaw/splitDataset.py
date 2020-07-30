@@ -214,7 +214,7 @@ def generateTrainTestTwo(imgDir, trainSaveDir, valSaveDir):
     for idName in tqdm(os.listdir(imgDir)):
         index += 1
         idDirPath = os.path.join(imgDir,idName)
-        if index <= 90000:
+        if index <= 75000:
             shutil.copytree(idDirPath,trainSaveDir + "/" + idName)
             indexT += 1
         else:

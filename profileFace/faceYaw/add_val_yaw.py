@@ -141,15 +141,15 @@ if __name__ == "__main__":
     weightPath3 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_noS_capsule_3_16_2_192_5/fsanet_noS_capsule_3_16_2_192_5.h5'
     model = createModel(weightPath1, weightPath2, weightPath3)
 
-    valRootPath = "valImage"
+    valRootPath = "/home/zhex/data/evoLVe_val_image"
+    savePath = "yaw_image_npy"
+    if not os.path.exists(savePath):
+        os.makedirs(savePath)
     for datasetName in os.listdir(valRootPath):
         datasetDir = os.path.join(valRootPath,datasetName)
         names = os.listdir(datasetDir)
         names.sort(key=lambda x:int(x[:-4]))
         # print("names=",names)
-        savePath = "yaw_image_npy" + "/" + datasetName
-        if not os.path.exists(savePath):
-            os.makedirs(savePath)
         sum = []
         for imageName in tqdm(names):
             imagePath = os.path.join(datasetDir,imageName)
@@ -161,5 +161,5 @@ if __name__ == "__main__":
             # print("coefficient=",coefficient)
             sum.append(coefficient)
         npSave = np.array(sum)
-        np.save(savePath + "/" +".npy", npSave)
-
+        print("npSave.shape=",npSave.shape)
+        np.save(savePath + "/" +"{}_yaw.npy".format(datasetName), npSave)

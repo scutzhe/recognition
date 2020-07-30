@@ -70,14 +70,21 @@ def val():
 
 
     logger.info("starting validation...")
+    # lfw, lfw_isSame, yaw_lfw = get_val_pair_yaw(valDataDir, "image", 'lfw')
+    # cfp_ff, cfp_ff_isSame, yaw_cfp_ff = get_val_pair_yaw(valDataDir, "image", 'cfp_ff')
+    # cfp_fp, cfp_fp_isSame, yaw_cfp_fp = get_val_pair_yaw(valDataDir, "image", 'cfp_fp')
+    # cplfw, cplfw_isSame, yaw_cplfw = get_val_pair_yaw(valDataDir, "image", 'cplfw')
+    # vgg2_fp, vgg2_fp_isSame, yaw_vgg2_fp = get_val_pair_yaw(valDataDir, "image", 'vgg2_fp')
+    # agedb, agedb_isSame, yaw_agedb = get_val_pair_yaw(valDataDir, "image", 'agedb_30')
+    # calfw, calfw_isSame, yaw_calfw = get_val_pair_yaw(valDataDir, "image",'calfw')
 
-    lfw, lfw_isSame, yaw = get_val_pair_yaw(valDataDir, "image", 'lfw')
-    cfp_ff, cfp_ff_isSame, yaw = get_val_pair_yaw(valDataDir, "image", 'cfp_ff')
-    cfp_fp, cfp_fp_isSame, yaw = get_val_pair_yaw(valDataDir, "image", 'cfp_fp')
-    cplfw, cplfw_isSame, yaw = get_val_pair_yaw(valDataDir, "image", 'cplfw')
-    vgg2_fp, vgg2_fp_isSame, yaw = get_val_pair_yaw(valDataDir, "image", 'vgg2_fp')
-    agedb, agedb_isSame, yaw = get_val_pair_yaw(valDataDir, "image", 'agedb_30')
-    calfw, calfw_isSame, yaw = get_val_pair_yaw(valDataDir, "image",'calfw')
+    lfw, lfw_isSame, yaw_lfw = get_val_pair_yaw(valDataDir, "blp", 'lfw')
+    cfp_ff, cfp_ff_isSame, yaw_cfp_ff = get_val_pair_yaw(valDataDir, "blp", 'cfp_ff')
+    cfp_fp, cfp_fp_isSame, yaw_cfp_fp = get_val_pair_yaw(valDataDir, "blp", 'cfp_fp')
+    cplfw, cplfw_isSame, yaw_cplfw = get_val_pair_yaw(valDataDir, "blp", 'cplfw')
+    vgg2_fp, vgg2_fp_isSame, yaw_vgg2_fp = get_val_pair_yaw(valDataDir, "blp", 'vgg2_fp')
+    agedb, agedb_isSame, yaw_agedb = get_val_pair_yaw(valDataDir, "blp", 'agedb_30')
+    calfw, calfw_isSame, yaw_calfw = get_val_pair_yaw(valDataDir, "blp", 'calfw')
 
     # ======= model & loss & optimizer =======#
     if backbone_name == "IR_SE_DREAM_101":
@@ -98,9 +105,11 @@ def val():
 
     gpu = 0
     epoch = 0
+
+    # lfw
     acc_lfw, best_threshold_lfw, roc_curve_lfw = perform_val_yaw(False, torch.device(f"cuda:{gpu}"),
                                                              embedding_size, batch_size,
-                                                             backbone, lfw, lfw_isSame, yaw)
+                                                             backbone, lfw, lfw_isSame, yaw_lfw)
     with SummaryWriter(log_root) as writer:
         writer.add_scalar('{}_Accuracy'.format("LFW"), acc_lfw, epoch+1)
     logger.info("=" * 60)
@@ -108,9 +117,11 @@ def val():
                 f" Threshold: {best_threshold_lfw:.3f}")
     logger.info("=" * 60)
 
+
+    # cfp_ff
     acc_cfp_ff, best_threshold_cfp_ff, roc_curve_cfp_ff = perform_val_yaw(False, torch.device(f"cuda:{gpu}"),
                                                                       embedding_size, batch_size,
-                                                                      backbone, cfp_ff, cfp_ff_isSame, yaw)
+                                                                      backbone, cfp_ff, cfp_ff_isSame, yaw_cfp_ff)
     with SummaryWriter(log_root) as writer:
         writer.add_scalar('{}_Accuracy'.format("CFP_FF"), acc_cfp_ff, epoch + 1)
     logger.info("=" * 60)
@@ -118,9 +129,10 @@ def val():
                 f" Threshold: {best_threshold_cfp_ff:.3f}")
     logger.info("=" * 60)
 
+    # cfp_fp
     acc_cfp_fp, best_threshold_cfp_fp, roc_curve_cfp_fp = perform_val_yaw(False, torch.device(f"cuda:{gpu}"),
                                                                       embedding_size, batch_size,
-                                                                      backbone, cfp_fp, cfp_fp_isSame, yaw)
+                                                                      backbone, cfp_fp, cfp_fp_isSame, yaw_cfp_ff)
     with SummaryWriter(log_root) as writer:
         writer.add_scalar('{}_Accuracy'.format("CFP_FP"), acc_cfp_fp, epoch + 1)
     logger.info("=" * 60)
@@ -128,9 +140,11 @@ def val():
                 f" Threshold: {best_threshold_cfp_fp:.3f}")
     logger.info("=" * 60)
 
+
+    #cplfw
     acc_cplfw, best_threshold_cplfw, roc_curve_cplfw = perform_val_yaw(False, torch.device(f"cuda:{gpu}"),
                                                                    embedding_size, batch_size,
-                                                                   backbone, cplfw, cplfw_isSame, yaw)
+                                                                   backbone, cplfw, cplfw_isSame, yaw_cplfw)
     with SummaryWriter(log_root) as writer:
         writer.add_scalar('{}_Accuracy'.format("CPLFW"), acc_cplfw, epoch + 1)
     logger.info("=" * 60)
@@ -138,9 +152,10 @@ def val():
                 f" Threshold: {best_threshold_cplfw:.3f}")
     logger.info("=" * 60)
 
+    # vgg2_fp
     acc_vgg2_fp, best_threshold_vgg2_fp, roc_curve_vgg2_fp = perform_val_yaw(False, torch.device(f"cuda:{gpu}"),
                                                                          embedding_size, batch_size,
-                                                                         backbone, vgg2_fp, vgg2_fp_isSame, yaw)
+                                                                         backbone, vgg2_fp, vgg2_fp_isSame, yaw_vgg2_fp)
     with SummaryWriter(log_root) as writer:
         writer.add_scalar('{}_Accuracy'.format("VGGFace2_FP"), acc_vgg2_fp, epoch + 1)
     logger.info("=" * 60)
@@ -148,9 +163,10 @@ def val():
                 f" Threshold: {best_threshold_vgg2_fp:.3f}")
     logger.info("=" * 60)
 
+    # agedb
     acc_agedb, best_threshold_agedb, roc_curve_agedb = perform_val_yaw(False, torch.device(f"cuda:{gpu}"),
                                                                    embedding_size, batch_size,
-                                                                   backbone, agedb, agedb_isSame, yaw)
+                                                                   backbone, agedb, agedb_isSame, yaw_agedb)
     with SummaryWriter(log_root) as writer:
         writer.add_scalar('{}_Accuracy'.format("AgeDB"), acc_agedb, epoch + 1)
     logger.info("=" * 60)
@@ -158,9 +174,10 @@ def val():
                 f" Threshold: {best_threshold_agedb:.3f}")
     logger.info("=" * 60)
 
+    # calfw
     acc_calfw, best_threshold_calfw, roc_curve_calfw = perform_val_yaw(False, torch.device(f"cuda:{gpu}"),
                                                                    embedding_size, batch_size,
-                                                                   backbone, calfw, calfw_isSame, yaw)
+                                                                   backbone, calfw, calfw_isSame, yaw_calfw)
     with SummaryWriter(log_root) as writer:
         writer.add_scalar('{}_Accuracy'.format("CALFW"), acc_calfw, epoch + 1)
     logger.info("=" * 60)

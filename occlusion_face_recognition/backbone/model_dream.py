@@ -13,7 +13,7 @@ import torch.nn as nn
 from torch.nn import Linear, Conv2d, BatchNorm1d, BatchNorm2d
 from torch.nn import PReLU, ReLU, Sigmoid, Dropout, MaxPool2d
 from torch.nn import AdaptiveAvgPool2d, Sequential, Module
-from collections import namedtuple
+from collections import namedtuple #创建一个可读性的元组
 from torch.nn.parameter import Parameter
 
 import math
@@ -28,7 +28,7 @@ class Flatten(Module):
 
 
 def l2_norm(input, axis=1):
-    norm = torch.norm(input, 2, axis, True)
+    norm = torch.norm(input, 2, axis, True) # True keep dimension
     output = torch.div(input, norm)
 
     return output
@@ -188,17 +188,16 @@ class Backbone(Module):
     def forward(self, x, yaw):
         x = self.input_layer(x)
         x = self.body(x)
-        mid_feature = self.output_layer(x)
+        mid_feature = self.output_layer(x)           # mid_feature.size()=(32,512)
 
         # dream block
         if self.end2end:
-            raw_feature = self.dream(mid_feature)
-            yaw = yaw.view(yaw.size(0), 1)
-            yaw = yaw.expand_as(raw_feature)
-            feature = yaw * raw_feature + mid_feature
+            raw_feature = self.dream(mid_feature)     # raw_feature.size()=(32,512)
+            yawTmp = yaw.view(yaw.size(0), 1)         # yaw.size() = (32,512)
+            yaw_ = yawTmp.expand_as(raw_feature)      # yaw.size()=(32,512)
+            feature = yaw_ * raw_feature + mid_feature # feature.size()=(32,512)
         else:
             feature = mid_feature
-
         return feature
 
     def _initialize_weights(self):
@@ -222,7 +221,7 @@ class Backbone(Module):
 def IR_SE_DREAM_50(input_size):
     """Constructs a ir_se-50 model.
     """
-    model = Backbone(input_size, 50, 'ir_se')
+    model = Backbone(input_size, 50, True, 'ir_se')
 
     return model
 
@@ -231,6 +230,7 @@ def IR_SE_DREAM_101(input_size):
     """Constructs a ir_se-101 model.
     """
     model = Backbone(input_size, 100, True, 'ir_se')
+    # model = Backbone(input_size, 100, False, 'ir_se')
 
     return model
 
@@ -238,6 +238,6 @@ def IR_SE_DREAM_101(input_size):
 def IR_SE_DREAM_152(input_size):
     """Constructs a ir_se-152 model.
     """
-    model = Backbone(input_size, 152, 'ir_se')
+    model = Backbone(input_size, 152, True, 'ir_se')
 
     return model

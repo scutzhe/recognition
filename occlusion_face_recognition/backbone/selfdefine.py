@@ -55,8 +55,8 @@ class MsCelebDataset(data.Dataset):
         return img, target, yaw
 
     def __len__(self):
-        # return len(self.imgs)
-        return self.label_num
+        return len(self.imgs)
+        # return self.label_num
 
 
 class CaffeCrop(object):

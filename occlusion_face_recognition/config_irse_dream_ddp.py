@@ -13,6 +13,14 @@ configurations = {
     1: dict(
         SEED=1337,  # random seed for reproduce results
 
+        # DATA_ROOT='/dev/shm',
+        # DATA_NAME='imgs_subset8000',
+        # DATA_NAME='imgs_subset500',
+        # DATA_NAME='profileAsia',
+        TRAIN_DATA_DIR='/home/zhex/data/profiledataset/profileAsia/train',
+        TRAIN_IMAGE ="/home/zhex/data/profiledataset/trainImage.txt",
+        TRAIN_LABEL = "/home/zhex/data/profiledataset/trainLabel.txt",
+
         VAL_DATA_DIR = "/home/zhex/data/evoLVe_val_dataset",
         YAW_BLP_DIR = "/home/zhex/data/evoLVe_val_dataset/yaw_blp_npy",
         YAW_IMG_DIR = "/home/zhex/data/evoLVe_val_dataset/yaw_image_npy",
@@ -24,14 +32,14 @@ configurations = {
 
         # the root to resume training from a saved checkpoint
         # BACKBONE_RESUME_ROOT='',
-        BACKBONE_RESUME_ROOT='model/2020-07-28-17-24_IR_SE_DREAM_101_Epoch_45_LOSS_1.784.pth',
+        BACKBONE_RESUME_ROOT='model/2020-07-24-20-42_IR_SE_DREAM_101_Epoch_23_LOSS_0.041.pth',
         # the root to resume training from a saved checkpoint
-        HEAD_RESUME_ROOT='model/2020-07-28-17-24_ArcFace_Epoch_45_LOSS_1.784.pth',
+        HEAD_RESUME_ROOT='model/2020-07-24-20-42_ArcFace_Epoch_23_LOSS_0.041.pth',
 
         # support: ['ResNet_50', 'ResNet_101', 'ResNet_152',
         # 'IR_SE_50', 'IRSE_101', 'IR_152', 'IR_SE_50', 'IR_SE_101', 'IR_SE_152',
         # 'IR_SE_DREAM_101']
-        BACKBONE_NAME='IR_SE_DREAM_101',
+        BACKBONE_NAME='IR_101',
 
         # support:  ['Softmax', 'ArcFace', 'CosFace', 'SphereFace', 'Am_softmax', 'CircleLoss']
         HEAD_NAME='ArcFace',
@@ -41,7 +49,7 @@ configurations = {
         RGB_STD=[0.5, 0.5, 0.5],
 
         EMBEDDING_SIZE=512,  # feature dimension
-        BATCH_SIZE=64,
+        BATCH_SIZE=32,
         DROP_LAST=True,  # whether drop the last batch to ensure consistent batch_norm statistics
         WEIGHT_DECAY=5e-4,  # do not apply to batch_norm parameters
         MOMENTUM=0.9,
@@ -52,7 +60,7 @@ configurations = {
                 30: 0.1,
                 45: 0.1},  # epoch stages to decay learning rate
         OPEN_HEAD_LAYERS_EPOCH=0,
-        CONTINUE_EPOCH=24,    # continue epoch
+        CONTINUE_EPOCH=0,    # continue epoch
 
         FREQUENCY = 5,
         NUM_WORKERS=2,

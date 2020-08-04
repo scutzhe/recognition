@@ -70,21 +70,22 @@ def val():
 
 
     logger.info("starting validation...")
-    # lfw, lfw_isSame, yaw_lfw = get_val_pair_yaw(valDataDir, "image", 'lfw')
-    # cfp_ff, cfp_ff_isSame, yaw_cfp_ff = get_val_pair_yaw(valDataDir, "image", 'cfp_ff')
-    # cfp_fp, cfp_fp_isSame, yaw_cfp_fp = get_val_pair_yaw(valDataDir, "image", 'cfp_fp')
-    # cplfw, cplfw_isSame, yaw_cplfw = get_val_pair_yaw(valDataDir, "image", 'cplfw')
-    # vgg2_fp, vgg2_fp_isSame, yaw_vgg2_fp = get_val_pair_yaw(valDataDir, "image", 'vgg2_fp')
-    # agedb, agedb_isSame, yaw_agedb = get_val_pair_yaw(valDataDir, "image", 'agedb_30')
-    # calfw, calfw_isSame, yaw_calfw = get_val_pair_yaw(valDataDir, "image",'calfw')
+    lfw, lfw_isSame, yaw_lfw = get_val_pair_yaw(valDataDir, "image", 'lfw')
+    cfp_ff, cfp_ff_isSame, yaw_cfp_ff = get_val_pair_yaw(valDataDir, "image", 'cfp_ff')
+    cfp_fp, cfp_fp_isSame, yaw_cfp_fp = get_val_pair_yaw(valDataDir, "image", 'cfp_fp')
+    cplfw, cplfw_isSame, yaw_cplfw = get_val_pair_yaw(valDataDir, "image", 'cplfw')
+    vgg2_fp, vgg2_fp_isSame, yaw_vgg2_fp = get_val_pair_yaw(valDataDir, "image", 'vgg2_fp')
+    agedb, agedb_isSame, yaw_agedb = get_val_pair_yaw(valDataDir, "image", 'agedb_30')
+    calfw, calfw_isSame, yaw_calfw = get_val_pair_yaw(valDataDir, "image",'calfw')
 
-    lfw, lfw_isSame, yaw_lfw = get_val_pair_yaw(valDataDir, "blp", 'lfw')
-    cfp_ff, cfp_ff_isSame, yaw_cfp_ff = get_val_pair_yaw(valDataDir, "blp", 'cfp_ff')
-    cfp_fp, cfp_fp_isSame, yaw_cfp_fp = get_val_pair_yaw(valDataDir, "blp", 'cfp_fp')
-    cplfw, cplfw_isSame, yaw_cplfw = get_val_pair_yaw(valDataDir, "blp", 'cplfw')
-    vgg2_fp, vgg2_fp_isSame, yaw_vgg2_fp = get_val_pair_yaw(valDataDir, "blp", 'vgg2_fp')
-    agedb, agedb_isSame, yaw_agedb = get_val_pair_yaw(valDataDir, "blp", 'agedb_30')
-    calfw, calfw_isSame, yaw_calfw = get_val_pair_yaw(valDataDir, "blp", 'calfw')
+
+    # lfw, lfw_isSame, yaw_lfw = get_val_pair_yaw(valDataDir, "blp", 'lfw')
+    # cfp_ff, cfp_ff_isSame, yaw_cfp_ff = get_val_pair_yaw(valDataDir, "blp", 'cfp_ff')
+    # cfp_fp, cfp_fp_isSame, yaw_cfp_fp = get_val_pair_yaw(valDataDir, "blp", 'cfp_fp')
+    # cplfw, cplfw_isSame, yaw_cplfw = get_val_pair_yaw(valDataDir, "blp", 'cplfw')
+    # vgg2_fp, vgg2_fp_isSame, yaw_vgg2_fp = get_val_pair_yaw(valDataDir, "blp", 'vgg2_fp')
+    # agedb, agedb_isSame, yaw_agedb = get_val_pair_yaw(valDataDir, "blp", 'agedb_30')
+    # calfw, calfw_isSame, yaw_calfw = get_val_pair_yaw(valDataDir, "blp", 'calfw')
 
     # ======= model & loss & optimizer =======#
     if backbone_name == "IR_SE_DREAM_101":

@@ -12,6 +12,8 @@
 import os
 import cv2
 import bcolz
+import torch
+from torchvision import transforms
 import numpy as np
 from tqdm import tqdm
 from PIL import Image
@@ -57,58 +59,64 @@ def check(npyPath):
 
 ## save origin pic
 # if __name__ == "__main__":
-#     ### create model
 #     valRootPath = "/home/zhex/data/evoLVe_val_dataset"
+#     saveRootDir = "/home/zhex/data/evoLVe_val_image"
 #     for valDatasetName in os.listdir(valRootPath):
 #         tmpDir = os.path.join(valRootPath,valDatasetName)
+#         print("tmpDir=",tmpDir)
 #         if os.path.isdir(tmpDir):
 #             # print("tmpDir=",tmpDir)
 #             # valDatasetName = "lfw"
 #             carry, isSame = get_val_pair(valRootPath,valDatasetName)
-#             # print("carry.shape=",carry.shape) #(12000,3,112,112)
+#             # print("carry.shape=",carry.shape) #(12000,3,112,112)add
 #             # print("isSame.shape=",isSame.shape) #(6000)
 #             # print("carry[0]=",carry[0].shape)
-#             saveDir = "valImage" + "/" +valDatasetName
+#             saveDir = saveRootDir + "/" +valDatasetName
 #             # print("saveDir=",saveDir)
 #             if not os.path.exists(saveDir):
 #                 os.makedirs(saveDir)
 #             for i in tqdm(range(carry.shape[0])):
-#                 image = carry[i]
-#                 image = image.transpose(1,2,0)
-#                 image = 255.0 * image
+#                 imageTmp = carry[i]
+#                 imageMiddle = imageTmp * 0.5 + 0.5
+#                 image = torch.Tensor(imageMiddle)
+#                 imgPil = transforms.ToPILImage()(image)
+#                 image = np.array(imgPil)
 #                 cv2.imwrite(saveDir + "/" + "{}.png".format(i),image)
 
-#  coefficient yaw
-# if __name__ == "__main__":
-#     ### create model
-#     weightPath1 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_capsule_3_16_2_21_5/fsanet_capsule_3_16_2_21_5.h5'
-#     weightPath2 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_var_capsule_3_16_2_21_5/fsanet_var_capsule_3_16_2_21_5.h5'
-#     weightPath3 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_noS_capsule_3_16_2_192_5/fsanet_noS_capsule_3_16_2_192_5.h5'
-#     model = createModel(weightPath1, weightPath2, weightPath3)
-#
-#     valRootPath = "/home/zhex/data/evoLVe_val_dataset"
-#     for valDatasetName in os.listdir(valRootPath):
-#         tmpDir = os.path.join(valRootPath,valDatasetName)
-#         if os.path.isdir(tmpDir):
-#             # print("tmpDir=",tmpDir)
-#             # valDatasetName = "lfw"
-#             carry, isSame = get_val_pair(valRootPath,valDatasetName)
-#             # print("carry.shape=",carry.shape) #(12000,3,112,112)
-#             # print("isSame.shape=",isSame.shape) #(6000)
-#             # print("carry[0]=",carry[0].shape)
-#             sum = []
-#             for i in tqdm(range(carry.shape[0])):
-#                 image = carry[i]
-#                 image = image.transpose(1,2,0)
-#                 yaw = angleNoDetection(image, model)
-#                 coefficient = yawCoefficient(abs(yaw))
-#                 # print("coefficient=",coefficient)
-#                 sum.append(coefficient)
-#             npSave = np.array(sum)
-#             np.save("yaw_npy" + "/" + "{}_yaw.npy".format(valDatasetName),npSave)
+##   coefficient yaw by blp
+if __name__ == "__main__":
+    ### create model
+    weightPath1 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_capsule_3_16_2_21_5/fsanet_capsule_3_16_2_21_5.h5'
+    weightPath2 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_var_capsule_3_16_2_21_5/fsanet_var_capsule_3_16_2_21_5.h5'
+    weightPath3 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_noS_capsule_3_16_2_192_5/fsanet_noS_capsule_3_16_2_192_5.h5'
+    model = createModel(weightPath1, weightPath2, weightPath3)
 
+    valRootPath = "/home/zhex/data/evoLVe_val_dataset"
+    savePath = "yaw_image_npy"
+    for valDatasetName in os.listdir(valRootPath):
+        tmpDir = os.path.join(valRootPath,valDatasetName)
+        if os.path.isdir(tmpDir):
+            # print("tmpDir=",tmpDir)
+            carry, isSame = get_val_pair(valRootPath,valDatasetName)
+            # print("carry.shape=",carry.shape) #(12000,3,112,112)
+            # print("isSame.shape=",isSame.shape) #(6000)
+            # print("carry[0]=",carry[0].shape)
+            sum = []
+            for i in tqdm(range(carry.shape[0])):
+                image = carry[i]
+                image = torch.Tensor(image * 0.5 + 0.5)
+                image = transforms.ToPILImage()(image)
+                image = np.array(image)
+                yaw = angleNoDetection(image, model)
+                coefficient = yawCoefficient(abs(yaw))
+                # print("coefficient=",coefficient)
+                sum.append(coefficient)
+            npSave = np.array(sum)
+            np.save(savePath + "/" + "{}_yaw.npy".format(valDatasetName),npSave)
+
+## calculate yaw by blp test
 # if __name__ == "__main__":
-#     ### create model
+#     ## create model
 #     weightPath1 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_capsule_3_16_2_21_5/fsanet_capsule_3_16_2_21_5.h5'
 #     weightPath2 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_var_capsule_3_16_2_21_5/fsanet_var_capsule_3_16_2_21_5.h5'
 #     weightPath3 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_noS_capsule_3_16_2_192_5/fsanet_noS_capsule_3_16_2_192_5.h5'
@@ -117,15 +125,21 @@ def check(npyPath):
 #     valRootPath = "/home/zhex/data/evoLVe_val_dataset"
 #     valDatasetName = "lfw"
 #     carry, isSame = get_val_pair(valRootPath, valDatasetName)
-#     # print("carry.shape=",carry.shape) #(12000,3,112,112)
-#     # print("isSame.shape=",isSame.shape) #(6000)
-#     # print("carry[0]=",carry[0].shape)
+#     print("carry.shape=",carry.shape) #(12000,3,112,112)
+#     print("isSame.shape=",isSame.shape) #(6000)
+#     print("carry[0]=",carry[0].shape)
 #     sum = []
 #     for i in tqdm(range(carry.shape[0])):
 #         image = carry[i]
-#         image = image.transpose(1, 2, 0)
-#         # cv2.imshow("image",image)
-#         # cv2.waitKey(1)
+#         image = torch.Tensor(image * 0.5 + 0.5)
+#
+#         img = transforms.ToPILImage()(image)
+#         img = np.array(img)
+#
+#         cv2.imwrite("out.jpg", img)
+#         cv2.imshow("image", img)
+#         cv2.waitKey()
+#         exit()
 #         cv2.imwrite("valImage" + "/" + "{}.png".format(i),image*255)
 #         yaw = angleNoDetection(image, model)
 #         coefficient = yawCoefficient(abs(yaw))
@@ -134,6 +148,7 @@ def check(npyPath):
 #     npSave = np.array(sum)
 #     np.save(valDatasetName + ".npy", npSave)
 
+## calculate yaw by image
 if __name__ == "__main__":
     ### create model
     weightPath1 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_capsule_3_16_2_21_5/fsanet_capsule_3_16_2_21_5.h5'

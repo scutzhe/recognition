@@ -40,9 +40,9 @@ def faceDetectionCenterFace(img:np.array,landmarks=True):
             newImg = crop(img,bbox[0])
             return newImg, bbox[0]
         else:
-            return "zero",[]
+            return np.array([]),[]
     else:
-        return "zero",[]
+        return np.array([]),[]
 
 
 def faceDetectionCenterMutilFace(img: np.array, landmarks=True):
@@ -85,6 +85,7 @@ if __name__ == "__main__":
     # newImg = faceDetectionCenterFace(img)
     # cv2.imshow("newImg",newImg)
     # cv2.waitKey(1000)
+
     videoPath = "/home/zhex/Videos/profileFace/20200713174000.avi"
     vid = cv2.VideoCapture(videoPath)
     while True:

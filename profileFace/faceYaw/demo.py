@@ -1,7 +1,7 @@
 import os
 import cv2
 import numpy as np
-from math import cos, sin, log
+from math import tan, cos, sin, asin, log, sqrt, pow
 from fsaLib.FSANET_model import *
 from faceDetection import faceDetectionCenterFace,faceDetectionCenterMutilFace
 from keras.layers import Average
@@ -42,6 +42,33 @@ def draw_axis(img, yaw, pitch, roll, tdx=None, tdy=None, size = 50):
 def sigmoid(x):
     return 1/(1+np.exp(-x))
 
+
+def newAngle(yaw,pitch):
+    """
+    :param yaw:
+    :param pitch:
+    :return:
+    """
+    pitch_ = pitch * np.pi / 180
+    yaw_ = yaw * np.pi / 180
+    middleValue1 = pow(tan(yaw_),2) / pow(tan(pitch_),2)*(1 + pow(tan(yaw_),2)) + 1
+    middleValue2 = sin(pitch_) * sqrt(middleValue1)
+    # return asin(middleValue2)
+    return middleValue2
+
+def newAngle2(yaw,pitch):
+    """
+    :param yaw:
+    :param pitch:
+    :return:
+    """
+    pitch_ = pitch * np.pi / 180
+    yaw_ = yaw * np.pi / 180
+    middleValue1 = 1 + pow(sin(yaw_)/tan(pitch_),2)
+    middleValue2 = sin(pitch_) * sqrt(middleValue1)
+    return asin(middleValue2)
+
+
 def yawCoefficient(yaw:float):
     """
     @param yaw:
@@ -63,7 +90,7 @@ def angleNoDetection(img,):
     yaw = p_result[0][0]
     pitch = p_result[0][1]
     roll = p_result[0][2]
-    return yaw
+    return round(yaw,2), round(pitch,2), round(roll,2)
 
 
 def angle(detected,input_img,faces,ad,img_size,img_w,img_h,model):
@@ -285,91 +312,255 @@ def recover(x):
 #     yaw = angleNoDetection(imgRGB)
 #     print("yaw=",yaw)
 
-## newest
+
+## face classification
+# if __name__ == '__main__':
+#     cv2.ocl.setUseOpenCL(False)
+#     weightPath1 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_capsule_3_16_2_21_5/fsanet_capsule_3_16_2_21_5.h5'
+#     weightPath2 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_var_capsule_3_16_2_21_5/fsanet_var_capsule_3_16_2_21_5.h5'
+#     weightPath3 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_noS_capsule_3_16_2_192_5/fsanet_noS_capsule_3_16_2_192_5.h5'
+#     model = createModel(weightPath1,weightPath2,weightPath3)
+#     # videoDir = "/home/zhex/Videos/profileFace/hall/test"
+#     # videoNames = os.listdir(videoDir)
+#     # videoNames.sort(key=lambda x:int(x[:-4]))
+#     # for videoName in videoNames:
+#     #     videoPath = os.path.join(videoDir,videoName)
+#     #     print("videoPath=",videoPath)
+#     videoPath = "/home/zhex/Videos/profileFace/hall/test/01.mp4"
+#     videoName = "01.mp4"
+#     vid = cv2.VideoCapture(videoPath)
+#     fourcc = cv2.VideoWriter_fourcc(*'XVID')
+#     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+#     # out = cv2.VideoWriter(videoName,fourcc,10,(2560,1440))
+#     out = cv2.VideoWriter(videoName,fourcc,10,(1920,1080))
+#     while True:
+#         flag, frame = vid.read()
+#         # print("frame.shape=",frame.shape)
+#         if flag:
+#             imgBGR = cv2.resize(frame,(0,0),fx=0.5,fy=0.5,interpolation=cv2.INTER_CUBIC)
+#             imgRGB = cv2.cvtColor(imgBGR,cv2.COLOR_BGR2RGB)
+#             imgDict = faceDetectionCenterMutilFace(imgRGB)
+#             if len(imgDict)>0:
+#                for key,value in imgDict.items():
+#                     yaw, pitch, roll = angleNoDetection(value)
+#                     # print("yaw=",yaw)
+#                     # txt = str(yaw) + "_" + str(pitch) + "_" + str(roll)
+#                     txt =  0 if abs(yaw) < 20 else 1
+#                     cv2.rectangle(frame,(2*key[0],2*key[1]),(2*key[2],2*key[3]),(0,0,255),2)
+#                     cv2.putText(frame,str(txt),(2*key[0],2*key[1]),cv2.FONT_HERSHEY_SIMPLEX,1,(0,0,255),2)
+#                     out.write(frame)
+#                     cv2.imshow("frame",frame)
+#                     cv2.waitKey(1)
+#             else:
+#                 continue
+#         else:
+#             break
+## face classification
 if __name__ == '__main__':
+    cv2.ocl.setUseOpenCL(False)
     weightPath1 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_capsule_3_16_2_21_5/fsanet_capsule_3_16_2_21_5.h5'
     weightPath2 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_var_capsule_3_16_2_21_5/fsanet_var_capsule_3_16_2_21_5.h5'
     weightPath3 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_noS_capsule_3_16_2_192_5/fsanet_noS_capsule_3_16_2_192_5.h5'
     model = createModel(weightPath1,weightPath2,weightPath3)
-
-    trainRootPath = "/home/zhex/data/profileNew/train"
-    trainImage = open("trainImage.txt","a")
-    trainLable = open("trainLabel.txt","a")
-
-    num_act_train = 0
-    num_pre_train = 0
-
-    IDsTrain = os.listdir(trainRootPath)
-    IDsTrain.sort(key=lambda x: int(x))
-    for id in tqdm(IDsTrain):
-        imgDir = os.path.join(trainRootPath, id)
-        # print("imgDir=",imgDir)
-        imgPaths = os.listdir(imgDir)
-        # print("imgPaths=",imgPaths)
-        imgPaths.sort(key=lambda x:int(x[:-4]))
-        # print("imgPaths=", imgPaths)
-        for imgName in imgPaths:
-            imgPath = os.path.join(imgDir,imgName)
-            # print("imgPath=",imgPath)
-            ID = str(imgPath.split("/")[-2])
-            # print("ID=",ID)
-            writePath = str(imgPath.split("/")[-2]) + "/" + str(imgPath.split("/")[-1])
-            trainImage.write(writePath + "\n")
-            trainImage.flush()
-            num_act_train += 1
-            imgBGR = cv2.imread(imgPath)
+    # videoDir = "/home/zhex/Videos/profileFace/hall/test"
+    # videoNames = os.listdir(videoDir)
+    # videoNames.sort(key=lambda x:int(x[:-4]))
+    # for videoName in videoNames:
+    #     videoPath = os.path.join(videoDir,videoName)
+    #     print("videoPath=",videoPath)
+    videoPath = "/home/zhex/Videos/profileFace/hall/test/05.mp4"
+    videoName = videoPath.split("/")[-1]
+    vid = cv2.VideoCapture(videoPath)
+    # fourcc = cv2.VideoWriter_fourcc(*'XVID')
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    # out = cv2.VideoWriter(videoName,fourcc,10,(2560,1440))
+    out = cv2.VideoWriter(videoName,fourcc,10,(1920,1080))
+    while True:
+        flag, frame = vid.read()
+        # print("frame.shape=",frame.shape)
+        if flag:
+            imgBGR = cv2.resize(frame,(0,0),fx=0.5,fy=0.5,interpolation=cv2.INTER_CUBIC)
             imgRGB = cv2.cvtColor(imgBGR,cv2.COLOR_BGR2RGB)
-            try:
-                # coefficient = angleDetection(imgRGB)
-                yaw = angleNoDetection(imgRGB)
-                coefficient = yawCoefficient(abs(yaw))
-                # print("coefficient=",coefficient)
-                num_pre_train += 1
-                trainLable.write(ID + " " + str(coefficient)+ "\n")
-                trainLable.flush()
-            except Exception as e:
-                print(e)
+            imgDict = faceDetectionCenterMutilFace(imgRGB)
+            if len(imgDict)>0:
+               for key,value in imgDict.items():
+                    yaw, pitch, roll = angleNoDetection(value)
+                    newYaw = newAngle2(yaw,pitch)
+                    # print("newYaw=",newYaw)
+                    txt =  abs(round(180 / np.pi * newYaw,2))
+                    txt = 0 if txt < 20 else 1
+                    cv2.rectangle(frame,(2*key[0],2*key[1]),(2*key[2],2*key[3]),(0,0,255),2)
+                    cv2.putText(frame,str(txt),(2*key[0],2*key[1]),cv2.FONT_HERSHEY_SIMPLEX,1,(0,0,255),2)
+                    out.write(frame)
+                    cv2.imshow("frame",frame)
+                    cv2.waitKey(1)
+            else:
+                continue
+        else:
+            break
 
-    print("num_act_train=", num_act_train)
-    print("num_pre_train=", num_pre_train)
+# multi faces
+# if __name__ == '__main__':
+#     cv2.ocl.setUseOpenCL(False)
+#     weightPath1 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_capsule_3_16_2_21_5/fsanet_capsule_3_16_2_21_5.h5'
+#     weightPath2 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_var_capsule_3_16_2_21_5/fsanet_var_capsule_3_16_2_21_5.h5'
+#     weightPath3 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_noS_capsule_3_16_2_192_5/fsanet_noS_capsule_3_16_2_192_5.h5'
+#     model = createModel(weightPath1,weightPath2,weightPath3)
+#     videoDir = "/home/zhex/Videos/profileFace/hall/test"
+#     videoNames = os.listdir(videoDir)
+#     videoNames.sort(key=lambda x:int(x[:-4]))
+#     for videoName in videoNames:
+#         videoPath = os.path.join(videoDir,videoName)
+#         print("videoPath=",videoPath)
+#     # videoPath = "/home/zhex/Videos/profileFace/06.avi"
+#     # videoName = "06.mp4"
+#         vid = cv2.VideoCapture(videoPath)
+#         # fourcc = cv2.VideoWriter_fourcc(*'XVID')
+#         # fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+#         # out = cv2.VideoWriter(videoName,fourcc,10,(2560,1440))
+#         # out = cv2.VideoWriter(videoName,fourcc,10,(1920,1080))
+#         while True:
+#             flag, frame = vid.read()
+#             # print("frame.shape=",frame.shape)
+#             if flag:
+#                 imgBGR = cv2.resize(frame,(0,0),fx=0.5,fy=0.5,interpolation=cv2.INTER_CUBIC)
+#                 imgRGB = cv2.cvtColor(imgBGR,cv2.COLOR_BGR2RGB)
+#                 imgDict = faceDetectionCenterMutilFace(imgRGB)
+#                 if len(imgDict)>0:
+#                    for key,value in imgDict.items():
+#                         yaw, pitch, roll = angleNoDetection(value)
+#                         # print("yaw=",yaw)
+#                         txt = str(yaw) + "_" + str(pitch) + "_" + str(roll)
+#                         cv2.rectangle(frame,(2*key[0],2*key[1]),(2*key[2],2*key[3]),(0,0,255),2)
+#                         cv2.putText(frame,txt,(2*key[0]-400,2*key[1]),cv2.FONT_HERSHEY_SIMPLEX,1,(0,0,255),2)
+#                         # out.write(frame)
+#                         cv2.imshow("frame",frame)
+#                         cv2.waitKey(1000)
+#                 else:
+#                     continue
+#             else:
+#                 break
 
-    valRootPath = "/home/zhex/data/profileNew/val"
-    valImage = open("valImage.txt","a")
-    valLable = open("valLabel.txt","a")
-    num_act_val = 0
-    num_pre_val = 0
-    IDsVal = os.listdir(valRootPath)
-    IDsVal.sort(key=lambda x: int(x))
-    for id in tqdm(IDsVal):
-        imgDir = os.path.join(valRootPath, id)
-        # print("imgDir=",imgDir)
-        imgPaths = os.listdir(imgDir)
-        # print("imgPaths=",imgPaths)
-        imgPaths.sort(key=lambda x: int(x[:-4]))
-        # print("imgPaths=", imgPaths)
-        for imgName in imgPaths:
-            imgPath = os.path.join(imgDir, imgName)
-            # print("imgPath=",imgPath)
-            ID = str(imgPath.split("/")[-2])
-            # print("ID=",ID)
-            writePath = str(imgPath.split("/")[-2]) + "/" + str(imgPath.split("/")[-1])
-            valImage.write(writePath + "\n")
-            valImage.flush()
-            num_act_val += 1
-            imgBGR = cv2.imread(imgPath)
-            imgRGB = cv2.cvtColor(imgBGR, cv2.COLOR_BGR2RGB)
-            try:
-                # coefficient = angleDetection(imgRGB)
-                yaw = angleNoDetection(imgRGB)
-                coefficient = yawCoefficient(abs(yaw))
-                # print("coefficient=",coefficient)
-                num_pre_val += 1
-                valLable.write(ID + " " + str(coefficient) + "\n")
-                valLable.flush()
-            except Exception as e:
-                print(e)
-    print("num_act_val=",num_act_val)
-    print("num_pre_val=",num_pre_val)
+## multi faces
+# if __name__ == '__main__':
+#     cv2.ocl.setUseOpenCL(False)
+#     weightPath1 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_capsule_3_16_2_21_5/fsanet_capsule_3_16_2_21_5.h5'
+#     weightPath2 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_var_capsule_3_16_2_21_5/fsanet_var_capsule_3_16_2_21_5.h5'
+#     weightPath3 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_noS_capsule_3_16_2_192_5/fsanet_noS_capsule_3_16_2_192_5.h5'
+#     model = createModel(weightPath1,weightPath2,weightPath3)
+#     videoDir = "/home/zhex/Videos/profileFace/outdoor"
+#     # for videoName in os.listdir(videoDir):
+#     #     videoPath = os.path.join(videoDir,videoName)
+#     videoPath = "/home/zhex/Videos/profileFace/outdoor/709.mp4"
+#     videoName = "709_2.mp4"
+#     vid = cv2.VideoCapture(videoPath)
+#     fourcc = cv2.VideoWriter_fourcc(*'XVID')
+#     out = cv2.VideoWriter(videoName,fourcc,25,(2560,1440))
+#     while True:
+#         flag, frame = vid.read()
+#         # print(frame.shape)
+#         if flag:
+#             imgBGR = cv2.resize(frame,(0,0),fx=0.5,fy=0.5,interpolation=cv2.INTER_CUBIC)
+#             imgRGB = cv2.cvtColor(imgBGR,cv2.COLOR_BGR2RGB)
+#             imgDict = faceDetectionCenterMutilFace(imgRGB)
+#             if len(imgDict)>0:
+#                for key,value in imgDict.items():
+#                     yaw = angleNoDetection(value)
+#                     print("yaw=",yaw)
+#                     cv2.putText(frame,str(yaw),(2*key[0],2*key[1]),cv2.FONT_HERSHEY_SIMPLEX,2,(0,0,255),2)
+#                     out.write(frame)
+#                     # cv2.imshow("frame",frame)
+#                     # cv2.waitKey(1)
+#             else:
+#                 continue
+#         else:
+#             break
+
+## newest
+# if __name__ == '__main__':
+#     weightPath1 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_capsule_3_16_2_21_5/fsanet_capsule_3_16_2_21_5.h5'
+#     weightPath2 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_var_capsule_3_16_2_21_5/fsanet_var_capsule_3_16_2_21_5.h5'
+#     weightPath3 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_noS_capsule_3_16_2_192_5/fsanet_noS_capsule_3_16_2_192_5.h5'
+#     model = createModel(weightPath1,weightPath2,weightPath3)
+#
+#     trainRootPath = "/home/zhex/data/profileNew/train"
+#     trainImage = open("trainImage.txt","a")
+#     trainLable = open("trainLabel.txt","a")
+#
+#     num_act_train = 0
+#     num_pre_train = 0
+#
+#     IDsTrain = os.listdir(trainRootPath)
+#     IDsTrain.sort(key=lambda x: int(x))
+#     for id in tqdm(IDsTrain):
+#         imgDir = os.path.join(trainRootPath, id)
+#         # print("imgDir=",imgDir)
+#         imgPaths = os.listdir(imgDir)
+#         # print("imgPaths=",imgPaths)
+#         imgPaths.sort(key=lambda x:int(x[:-4]))
+#         # print("imgPaths=", imgPaths)
+#         for imgName in imgPaths:
+#             imgPath = os.path.join(imgDir,imgName)
+#             # print("imgPath=",imgPath)
+#             ID = str(imgPath.split("/")[-2])
+#             # print("ID=",ID)
+#             writePath = str(imgPath.split("/")[-2]) + "/" + str(imgPath.split("/")[-1])
+#             trainImage.write(writePath + "\n")
+#             trainImage.flush()
+#             num_act_train += 1
+#             imgBGR = cv2.imread(imgPath)
+#             imgRGB = cv2.cvtColor(imgBGR,cv2.COLOR_BGR2RGB)
+#             try:
+#                 # coefficient = angleDetection(imgRGB)
+#                 yaw = angleNoDetection(imgRGB)
+#                 coefficient = yawCoefficient(abs(yaw))
+#                 # print("coefficient=",coefficient)
+#                 num_pre_train += 1
+#                 trainLable.write(ID + " " + str(coefficient)+ "\n")
+#                 trainLable.flush()
+#             except Exception as e:
+#                 print(e)
+#
+#     print("num_act_train=", num_act_train)
+#     print("num_pre_train=", num_pre_train)
+#
+#     valRootPath = "/home/zhex/data/profileNew/val"
+#     valImage = open("valImage.txt","a")
+#     valLable = open("valLabel.txt","a")
+#     num_act_val = 0
+#     num_pre_val = 0
+#     IDsVal = os.listdir(valRootPath)
+#     IDsVal.sort(key=lambda x: int(x))
+#     for id in tqdm(IDsVal):
+#         imgDir = os.path.join(valRootPath, id)
+#         # print("imgDir=",imgDir)
+#         imgPaths = os.listdir(imgDir)
+#         # print("imgPaths=",imgPaths)
+#         imgPaths.sort(key=lambda x: int(x[:-4]))
+#         # print("imgPaths=", imgPaths)
+#         for imgName in imgPaths:
+#             imgPath = os.path.join(imgDir, imgName)
+#             # print("imgPath=",imgPath)
+#             ID = str(imgPath.split("/")[-2])
+#             # print("ID=",ID)
+#             writePath = str(imgPath.split("/")[-2]) + "/" + str(imgPath.split("/")[-1])
+#             valImage.write(writePath + "\n")
+#             valImage.flush()
+#             num_act_val += 1
+#             imgBGR = cv2.imread(imgPath)
+#             imgRGB = cv2.cvtColor(imgBGR, cv2.COLOR_BGR2RGB)
+#             try:
+#                 # coefficient = angleDetection(imgRGB)
+#                 yaw = angleNoDetection(imgRGB)
+#                 coefficient = yawCoefficient(abs(yaw))
+#                 # print("coefficient=",coefficient)
+#                 num_pre_val += 1
+#                 valLable.write(ID + " " + str(coefficient) + "\n")
+#                 valLable.flush()
+#             except Exception as e:
+#                 print(e)
+#     print("num_act_val=",num_act_val)
+#     print("num_pre_val=",num_pre_val)
 
 
 # if __name__ == '__main__':
@@ -486,36 +677,24 @@ if __name__ == '__main__':
 #         else:
 #             break
 
+
 # if __name__ == '__main__':
 #     cv2.ocl.setUseOpenCL(False)
 #     weightPath1 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_capsule_3_16_2_21_5/fsanet_capsule_3_16_2_21_5.h5'
 #     weightPath2 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_var_capsule_3_16_2_21_5/fsanet_var_capsule_3_16_2_21_5.h5'
 #     weightPath3 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_noS_capsule_3_16_2_192_5/fsanet_noS_capsule_3_16_2_192_5.h5'
 #     model = createModel(weightPath1,weightPath2,weightPath3)
-#     videoDir = "/home/zhex/Videos/profileFace/outdoor"
-#     # for videoName in os.listdir(videoDir):
-#     #     videoPath = os.path.join(videoDir,videoName)
-#     videoPath = "/home/zhex/Videos/profileFace/outdoor/709.mp4"
-#     videoName = "709_2.mp4"
-#     vid = cv2.VideoCapture(videoPath)
-#     fourcc = cv2.VideoWriter_fourcc(*'XVID')
-#     out = cv2.VideoWriter(videoName,fourcc,25,(2560,1440))
-#     while True:
-#         flag, frame = vid.read()
-#         # print(frame.shape)
-#         if flag:
-#             imgBGR = cv2.resize(frame,(0,0),fx=0.5,fy=0.5,interpolation=cv2.INTER_CUBIC)
-#             imgRGB = cv2.cvtColor(imgBGR,cv2.COLOR_BGR2RGB)
-#             imgDict = faceDetectionCenterMutilFace(imgRGB)
-#             if len(imgDict)>0:
-#                for key,value in imgDict.items():
-#                     yaw = angleNoDetection(value)
-#                     print("yaw=",yaw)
-#                     cv2.putText(frame,str(yaw),(2*key[0],2*key[1]),cv2.FONT_HERSHEY_SIMPLEX,2,(0,0,255),2)
-#                     out.write(frame)
-#                     # cv2.imshow("frame",frame)
-#                     # cv2.waitKey(1)
-#             else:
-#                 continue
-#         else:
-#             break
+#     imageDir = "/home/zhex/git_me/recognition/occlusion_face_recognition/testImage"
+#     imageNames = os.listdir(imageDir)
+#     imageNames.sort(key = lambda x: int(x[:-4]))
+#     yawSum = []
+#     for imgName in imageNames:
+#         imagePath = os.path.join(imageDir,imgName)
+#         imgBGR = cv2.imread(imagePath)
+#         imgRGB = cv2.cvtColor(imgBGR,cv2.COLOR_BGR2RGB)
+#         yaw = angleNoDetection(imgRGB)
+#         coefficient = yawCoefficient(yaw)
+#         yawSum.append(coefficient)
+#         # print("{}_yaw=".format(imgName),coefficient)
+#     yawNpy = np.array(yawSum)
+#     np.save("yawNpy.npy",yawNpy)

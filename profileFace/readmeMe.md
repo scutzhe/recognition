@@ -6,3 +6,16 @@
 2.4 3D landMark计算人脸偏航角  
     ![](image/3dLandMark.png)  
 2.5 
+3. 人脸识别数据集处理流程  
+原始数据集切割成训练集验证集  
+对原始数据集ID做重命名
+
+4. 更改源  
+4.1 阿里云 http://mirrors.aliyun.com/pypi/simple/  
+  中国科技大学 https://pypi.mirrors.ustc.edu.cn/simple/   
+  豆瓣(douban) http://pypi.douban.com/simple/    
+  清华大学 https://pypi.tuna.tsinghua.edu.cn/simple/   
+
+5. 人脸偏航角算法更新算法(用偏航角和俯仰角共同来表征侧脸)  
+5.1 具体如何表征需要在长方体中示意  
+5.2 原始分类算法在验证集上效果好,但是在监控视频下效果并不好(甚至很差)  

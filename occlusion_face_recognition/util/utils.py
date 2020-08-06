@@ -255,8 +255,7 @@ def perform_val_yaw(multi_gpu, device, embedding_size, batch_size, backbone, car
     backbone.eval()  # switch to evaluation mode
 
     idx = 0
-    embeddings = np.zeros([len(carray), embedding_size]) # num * 512
-    # print("yaw.shape=",yaw.shape) # yaw.shape=(12000,0)
+    embeddings = np.zeros([len(carray), embedding_size])
     with torch.no_grad():
         while idx + batch_size <= len(carray):
             batch = torch.tensor(carray[idx:idx + batch_size][:, [2, 1, 0], :, :])
@@ -272,19 +271,17 @@ def perform_val_yaw(multi_gpu, device, embedding_size, batch_size, backbone, car
                 embeddings[idx:idx + batch_size] = l2_norm(backbone(ccropped.to(device), yawYaw.to(device))).cpu()
             idx += batch_size
 
-
         if idx < len(carray):
+            print("Here ... ... ...{}".format(idx))
             batch = torch.tensor(carray[idx:])
-            yaw = torch.tensor(yaw[idx:])
+            yaw = torch.tensor(yaw[idx:]).float()
             if tta:
                 ccropped = ccrop_batch(batch)
                 fliped = hflip_batch(ccropped)
-                # emb_batch = backbone(ccropped.to(device)).cpu() + backbone(fliped.to(device)).cpu()
                 emb_batch = backbone(ccropped.to(device), yaw.to(device)).cpu() + backbone(fliped.to(device), yaw.to(device)).cpu()
                 embeddings[idx:] = l2_norm(emb_batch)
             else:
                 ccropped = ccrop_batch(batch)
-                # embeddings[idx:] = l2_norm(backbone(ccropped.to(device))).cpu()
                 embeddings[idx:] = l2_norm(backbone(ccropped.to(device), yaw.to(device))).cpu()
 
     tpr, fpr, accuracy, best_thresholds = evaluate(embeddings, issame, nrof_folds)

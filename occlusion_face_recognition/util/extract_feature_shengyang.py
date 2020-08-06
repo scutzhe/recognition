@@ -79,23 +79,44 @@ def extractFeature(img_root, backbone, model_root,
 
     return features
 
+# if __name__ == "__main__":
+#     imageDir = "testImage"
+#     modelRoot = "/home/zhex/pre_models/AILuoGang/2020-07-06-05-55_IR_SE_101_Epoch_55_LOSS_0.001.pth"
+#     net = IR_SE_101([112])
+#     imageNames = os.listdir(imageDir)
+#     imageNames.sort(key=lambda x:int(x[:-4]))
+#     for name1 in imageNames:
+#         imagePath1 = os.path.join(imageDir,name1)
+#         for name2 in imageNames:
+#             imagePath2 = os.path.join(imageDir,name2)
+#             if imagePath1 != imagePath2:
+#                 feature1 = extractFeature(imagePath1, net, modelRoot)
+#                 feature2 = extractFeature(imagePath2, net, modelRoot)
+#                 # print("feature1.size()=",feature1.size())
+#                 # print("feature2.size()=",feature2.size())
+#                 feature1 = F.normalize(feature1)  # F.normalize只能处理两维的数据，L2归一化
+#                 feature2 = F.normalize(feature2)
+#                 distance = feature1.mm(feature2.t())
+#                 distance = round(distance.item(), 4)
+#                 print("{} and {}'s distance=".format(name1,name2), distance)
+
 if __name__ == "__main__":
     imageDir = "testImage"
     modelRoot = "/home/zhex/pre_models/AILuoGang/2020-07-06-05-55_IR_SE_101_Epoch_55_LOSS_0.001.pth"
     net = IR_SE_101([112])
     imageNames = os.listdir(imageDir)
     imageNames.sort(key=lambda x:int(x[:-4]))
-    for name1 in imageNames:
-        imagePath1 = os.path.join(imageDir,name1)
-        for name2 in imageNames:
-            imagePath2 = os.path.join(imageDir,name2)
-            if imagePath1 != imagePath2:
-                feature1 = extractFeature(imagePath1, net, modelRoot)
-                feature2 = extractFeature(imagePath2, net, modelRoot)
-                # print("feature1.size()=",feature1.size())
-                # print("feature2.size()=",feature2.size())
-                feature1 = F.normalize(feature1)  # F.normalize只能处理两维的数据，L2归一化
-                feature2 = F.normalize(feature2)
-                distance = feature1.mm(feature2.t())
-                distance = round(distance.item(), 4)
-                print("{} and {}'s distance=".format(name1,name2), distance)
+    length = len(imageNames)
+    for i in range(length):
+        imagePath1 = os.path.join(imageDir,imageNames[i])
+        feature1 = extractFeature(imagePath1, net, modelRoot)
+        for j in range(i+1,length):
+            imagePath2 = os.path.join(imageDir,imageNames[j])
+            feature2 = extractFeature(imagePath2, net, modelRoot)
+            # print("feature1.size()=",feature1.size())
+            # print("feature2.size()=",feature2.size())
+            feature1 = F.normalize(feature1)  # F.normalize只能处理两维的数据，L2归一化
+            feature2 = F.normalize(feature2)
+            distance = feature1.mm(feature2.t())
+            distance = round(distance.item(), 4)
+            print("{} and {}'s distance=".format(imageNames[i],imageNames[j]), distance)

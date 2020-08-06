@@ -86,18 +86,24 @@ def extractFeature(img_root, backbone, model_root, yaw,
 
 ## simple test
 if __name__ == "__main__":
-    imagePath1 = "testImage/5.jpg"
-    imagePath2 = "testImage/4.jpg"
+    imageDir = "testImage"
     yawPath = "yaw_npy/yawNpy.npy"
-    yaw = np.load(yawPath)
     modelRoot = "model/2020-07-30-09-15_IR_SE_DREAM_101_Epoch_101_LOSS_0.005.pth"
     net = IR_SE_PROFILE_101([112])
-    feature1 = extractFeature(imagePath1, net, modelRoot,yaw[5])
-    feature2 = extractFeature(imagePath2, net, modelRoot,yaw[4])
-    # print("feature1.size()=",feature1.size())
-    # print("feature2.size()=",feature2.size())
-    feature1 = F.normalize(feature1)  # F.normalize只能处理两维的数据，L2归一化
-    feature2 = F.normalize(feature2)
-    distance = feature1.mm(feature2.t())
-    distance = round(distance.item(),4)
-    print("distance=",distance)
+    imageNames = os.listdir(imageDir)
+    imageNames.sort(key=lambda x: int(x[:-4]))
+    length = len(imageNames)
+    yaw = np.load(yawPath)
+    for i in range(length):
+        imagePath1 = os.path.join(imageDir, imageNames[i])
+        feature1 = extractFeature(imagePath1, net, modelRoot, yaw[i])
+        for j in range(i + 1, length):
+            imagePath2 = os.path.join(imageDir, imageNames[j])
+            feature2 = extractFeature(imagePath2, net, modelRoot, yaw[j])
+            # print("feature1.size()=",feature1.size())
+            # print("feature2.size()=",feature2.size())
+            feature1 = F.normalize(feature1)  # F.normalize只能处理两维的数据，L2归一化
+            feature2 = F.normalize(feature2)
+            distance = feature1.mm(feature2.t())
+            distance = round(distance.item(), 4)
+            print("{} and {}'s distance=".format(imageNames[i], imageNames[j]), distance)

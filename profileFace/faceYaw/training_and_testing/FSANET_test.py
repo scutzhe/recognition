@@ -137,6 +137,7 @@ def main():
 
             model = FSA_net_Var_Capsule(_IMAGE_SIZE, num_classes, stage_num, lambda_d, S_set)()
             save_name = 'fsanet_var_capsule'+str_S_set
+
         elif model_type == 4:
             num_capsule = 3
             dim_capsule = 16
@@ -149,6 +150,7 @@ def main():
 
             model = FSA_net_NetVLAD(_IMAGE_SIZE, num_classes, stage_num, lambda_d, S_set)()
             save_name = 'fsanet_netvlad'+str_S_set
+
         elif model_type == 5:
             num_capsule = 3
             dim_capsule = 16
@@ -161,6 +163,7 @@ def main():
 
             model = FSA_net_Var_NetVLAD(_IMAGE_SIZE, num_classes, stage_num, lambda_d, S_set)()
             save_name = 'fsanet_var_netvlad'+str_S_set
+
         elif model_type == 6:
             num_capsule = 3
             dim_capsule = 16
@@ -173,6 +176,7 @@ def main():
 
             model = FSA_net_noS_Capsule(_IMAGE_SIZE, num_classes, stage_num, lambda_d, S_set)()
             save_name = 'fsanet_noS_capsule'+str_S_set
+
         elif model_type == 7:
             num_capsule = 3
             dim_capsule = 16

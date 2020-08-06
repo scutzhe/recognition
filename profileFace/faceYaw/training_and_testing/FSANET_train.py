@@ -6,8 +6,8 @@ import argparse
 import pandas as pd
 import numpy as np
 
-from lib.FSANET_model import *
-from lib.SSRNET_model import *
+from fsaLib.FSANET_model import *
+from fsaLib.SSRNET_model import *
 
 import TYY_callbacks
 from TYY_generators import *
@@ -23,6 +23,7 @@ logging.basicConfig(level=logging.DEBUG)
 def load_data_npz(npz_path):
     d = np.load(npz_path)
     return d["image"], d["pose"]
+
 
 def mk_dir(dir):
     try:
@@ -47,7 +48,6 @@ def get_args():
 
     args = parser.parse_args()
     return args
-
 
 
 def main():
@@ -86,10 +86,12 @@ def main():
         y_data = np.array(y_data)
         print(x_data.shape)
         print(y_data.shape)
+
     elif db_name == 'synhead_noBIWI':
         image, pose = load_data_npz('../data/synhead/media/jinweig/Data2/synhead2_release/synhead_noBIWI.npz')
         x_data = image
         y_data = pose
+
     elif db_name == 'BIWI':
         image, pose = load_data_npz('../data/BIWI_train.npz')
         x_train = image
@@ -97,6 +99,7 @@ def main():
         image_test, pose_test = load_data_npz('../data/BIWI_test.npz')
         x_test = image_test
         y_test = pose_test
+
     else:
         print('db_name is wrong!!!')
         return
@@ -221,6 +224,7 @@ def main():
 
         model = FSA_net_Var_Metric(image_size, num_classes, stage_num, lambda_d, S_set)()
         save_name = 'fsanet_var_metric'+str_S_set
+
     elif model_type == 10:
         num_capsule = 3
         dim_capsule = 16
@@ -235,10 +239,7 @@ def main():
         save_name = 'fsanet_noS_metric'+str_S_set
 
 
-
-
     model.compile(optimizer=optMethod, loss=["mae"],loss_weights=[1])
-
     logging.debug("Model summary...")
     model.count_params()
     model.summary()
@@ -264,8 +265,6 @@ def main():
                         ]
 
     logging.debug("Running training...")
-    
-
 
     if db_name != 'BIWI':
         data_num = len(x_data)

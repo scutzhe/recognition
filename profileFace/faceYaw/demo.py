@@ -43,20 +43,20 @@ def sigmoid(x):
     return 1/(1+np.exp(-x))
 
 
-def newAngle(yaw,pitch):
-    """
-    :param yaw:
-    :param pitch:
-    :return:
-    """
-    pitch_ = pitch * np.pi / 180
-    yaw_ = yaw * np.pi / 180
-    middleValue1 = pow(tan(yaw_),2) / pow(tan(pitch_),2)*(1 + pow(tan(yaw_),2)) + 1
-    middleValue2 = sin(pitch_) * sqrt(middleValue1)
-    # return asin(middleValue2)
-    return middleValue2
+# def newAngle(yaw,pitch):
+#     """
+#     :param yaw:
+#     :param pitch:
+#     :return:
+#     """
+#     pitch_ = pitch * np.pi / 180
+#     yaw_ = yaw * np.pi / 180
+#     middleValue1 = pow(tan(yaw_),2) / pow(tan(pitch_),2)*(1 + pow(tan(yaw_),2)) + 1
+#     middleValue2 = sin(pitch_) * sqrt(middleValue1)
+#     # return asin(middleValue2)
+#     return middleValue2
 
-def newAngle2(yaw,pitch):
+def newAngle(yaw,pitch):
     """
     :param yaw:
     :param pitch:
@@ -385,7 +385,7 @@ if __name__ == '__main__':
             if len(imgDict)>0:
                for key,value in imgDict.items():
                     yaw, pitch, roll = angleNoDetection(value)
-                    newYaw = newAngle2(yaw,pitch)
+                    newYaw = newAngle(yaw,pitch)
                     # print("newYaw=",newYaw)
                     txt =  abs(round(180 / np.pi * newYaw,2))
                     txt = 0 if txt < 20 else 1

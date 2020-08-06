@@ -3,16 +3,39 @@ import os
 import sys
 import importlib
 import argparse
-sys.path.append('..')
+# sys.path.append('..')
 
 import tensorflow as tf
 from keras import backend as K
 from keras.models import load_model
 from tensorflow.python.framework.graph_util import convert_variables_to_constants
-from lib.FSANET_model import *
+from fsaLib.FSANET_model import *
+
+
+parser = argparse.ArgumentParser()
+#/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_capsule_3_16_2_21_5
+#/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_var_capsule_3_16_2_21_5
+#/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_noS_capsule_3_16_2_192_5
+parser.add_argument(
+    '--trained-model-dir-path', default="/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_var_capsule_3_16_2_21_5",
+    type=str,
+    help='The directory that contains the pre-trained model')
+
+parser.add_argument(
+    '--output-dir-path', default="./pb",
+    type=str,
+    help='The directory that would contain the converted models')
+
+args = parser.parse_args()
 
 def freeze_session(session, keep_var_names=None, output_names=None, clear_devices=True):
-
+    """
+    :param session:
+    :param keep_var_names:
+    :param output_names:
+    :param clear_devices:
+    :return:
+    """
     graph = session.graph
     with graph.as_default():
         freeze_var_names = list(
@@ -31,9 +54,9 @@ def freeze_session(session, keep_var_names=None, output_names=None, clear_device
 
 def class_for_name(module_name, class_name):
     # load the module, will raise ImportError if module cannot be loaded
-    m = importlib.import_module(module_name)
+    m = importlib.import_module(module_name) # 动态导入模块
     # get the class, will raise AttributeError if class cannot be found
-    c = getattr(m, class_name)
+    c = getattr(m, class_name) # 获得属性值
     return c
 
 
@@ -82,7 +105,8 @@ def create_model(model_name, model_class_name):
     # we will use the name of the directory to dynamically create the corresponding
     # class and the hyper-parameters (which thankfully are encoded in the name of the directory)
 
-    model_cls = class_for_name("lib", model_class_name)
+    # model_cls = class_for_name("lib", model_class_name)
+    model_cls = class_for_name("fsaLib", model_class_name)
 
     hparams_start_loc = re.search("\d", model_name).start()
     hprams_str = model_name[hparams_start_loc:]
@@ -100,56 +124,32 @@ def create_model(model_name, model_class_name):
     model_obj = model_cls(image_size, num_classes,
                           stage_num, lambda_d, hparams)()
 
-    model_obj.count_params()
-    model_obj.summary()
+    # model_obj.count_params()
+    # model_obj.summary()
 
     return model_obj
 
-
-def parse_arguments(argv):
-    """ Parse the arguments """
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument(
-        '--trained-model-dir-path',
-        required=True,
-        type=str,
-        help='The directory that contains the pre-trained model')
-
-    parser.add_argument(
-        '--output-dir-path',
-        required=True,
-        type=str,
-        help='The directory that would contain the converted models')
-
-    return parser.parse_args(argv)
-
-
-def main(args):
-
+def main():
     model_name = os.path.basename(args.trained_model_dir_path)
-
+    print("model_name=",model_name) # fsanet_capsule_3_16_2_21_5
     # convert existing model with lambda layers to
     # new model with custom layers
     model_cls_name = build_model_class_from_name(model_name)
+    print("model_cls_name=",model_cls_name) # FSA_net_Capsule
 
     model_obj = create_model(model_name, model_cls_name)
     # need to load the weights first
-    model_obj.load_weights(os.path.join(
-        args.trained_model_dir_path, model_name + ".h5"))
+    weightsPath = os.path.join(args.trained_model_dir_path, model_name + ".h5")
+    print("weightsPath=",weightsPath)
+    model_obj.load_weights(weightsPath)
 
     # we now save it in the temp folder
     # this version will now be saved with the custom layer information
     # serialized
-    converted_keras_model_dir = os.path.join(args.output_dir_path,
-                                             "converted-models", "keras")
-
+    converted_keras_model_dir = os.path.join(args.output_dir_path,"converted-models", "keras")
     os.makedirs(converted_keras_model_dir, exist_ok=True)
-
-    keras_model_path = os.path.join(
-        converted_keras_model_dir, model_name) + ".hd5"
-
-    model_obj.save(keras_model_path)
+    keras_model_path = os.path.join(converted_keras_model_dir, model_name) + ".hd5"
+    model_obj.save(keras_model_path) # save net structure and parameter's value
 
     # Do the session clearing and creation first
     K.clear_session()
@@ -162,6 +162,7 @@ def main(args):
     print(f"Model inputs information - {model.inputs}")
     print(f"Model outputs information - {model.outputs}")
 
+
     # freez the graph
     frozen_graph = freeze_session(sess,
                                   output_names=[out.op.name for out in model.outputs])
@@ -170,9 +171,12 @@ def main(args):
     os.makedirs(tf_dir_path, exist_ok=True)
 
     # write the graph
-    tf.io.write_graph(frozen_graph, tf_dir_path,
-                      f"{model_name}.pb", as_text=False)
+    # tf.io.write_graph(frozen_graph, tf_dir_path, f"{model_name}.pb", as_text=False) # tf1.11.0 error
+    # tf.io.write_file(frozen_graph, tf_dir_path, f"{model_name}.pb", as_text=False) # tf 2.0的用法
+
+    model_f = tf.gfile.GFile("{}.pb".format(model_name), "wb")
+    model_f.write(frozen_graph.SerializeToString())
 
 
 if __name__ == '__main__':
-    main(parse_arguments(sys.argv[1:]))
+    main()

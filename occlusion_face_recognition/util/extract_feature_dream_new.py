@@ -4,26 +4,18 @@
 # @author  : 郑祥忠
 # @license : (C) Copyright,2016-2020,广州海格星航科技
 # @contact : dylenzheng@gmail.com
-# @file    : extract_feature_dream.py
-# @time    : 7/30/20 3:11 PM
+# @file    : extract_feature_dream_new.py
+# @time    : 8/7/20 5:15 PM
 # @desc    : 
 '''
 
+# Helper function for extracting features from pre-trained models
 import torch
 import cv2
 import numpy as np
 import os
 from backbone.model_dream import IR_SE_DREAM_101
 import torch.nn.functional as F
-
-def np2tensor(imgNp):
-    """
-    @param imgNp:
-    @return:
-    """
-    imgTensor = torch.from_numpy(imgNp)
-    inputTensor = imgTensor.unsqueeze(0).permute(0,3,1,2)
-    return inputTensor
 
 def l2_norm(input, axis=1):
     """
@@ -33,43 +25,57 @@ def l2_norm(input, axis=1):
     """
     norm = torch.norm(input, 2, axis, True)
     output = torch.div(input, norm)
+
     return output
 
-
+## refer to train coding
 def extractFeature(img_root, backbone, model_root, yaw,
-                    device=torch.device("cuda:0" if torch.cuda.is_available() else "cpu"), tta=True):
+                   device=torch.device("cuda:0" if torch.cuda.is_available() else "cpu"), tta=True):
     """
     @param img_root:
     @param backbone:
     @param model_root:
-    @param yaw:
     @param device:
     @param tta:
     @return:
     """
     # pre-requisites
-    assert (os.path.exists(img_root)), "{} is null...".format(img_root)
-    assert (os.path.exists(model_root)), "{} is null...".format(model_root)
+    assert (os.path.exists(img_root))
+    # print('Testing Data Root:', img_root)
+    assert (os.path.exists(model_root))
     # print('Backbone Model Root:', model_root)
 
     # load image
     img = cv2.imread(img_root)
+    ccropped = cv2.resize(img, (112, 112), interpolation=cv2.INTER_CUBIC)
+    ccropped = ccropped[..., ::-1]  # BGR to RGB
 
-    # resize image to [112,112]
-    imgBgr = cv2.resize(img, (112, 112),interpolation=cv2.INTER_CUBIC)
-    imgRgb = cv2.cvtColor(imgBgr,cv2.COLOR_BGR2RGB)
+    # flip image horizontally
+    flipped = cv2.flip(ccropped, 1)
+
     # load numpy to tensor
-    flipped = torch.from_numpy(imgRgb)
-    flipped = flipped.unsqueeze(0).permute(0,3,1,2).float()
-    # load backbone from a checkpoint
-    # print("Loading Backbone Checkpoint '{}'".format(model_root))
-    backbone.load_state_dict(torch.load(model_root))
-    backbone.to(device)
+    ccropped = ccropped.swapaxes(1, 2).swapaxes(0, 1)
+    ccropped = np.reshape(ccropped, [1, 3, 112, 112])
+    ccropped = np.array(ccropped, dtype=np.float32)
+    ccropped = (ccropped - 127.5) / 128
+    ccropped = torch.from_numpy(ccropped)
+
+    flipped = flipped.swapaxes(1, 2).swapaxes(0, 1)
+    flipped = np.reshape(flipped, [1, 3, 112, 112])
+    flipped = np.array(flipped, dtype=np.float32)
+    flipped = (flipped - 127.5) / 128
+    flipped = torch.from_numpy(flipped)
 
     # yaw
     yawNp = np.array([yaw])
     yaw_ = torch.tensor(yawNp).float()
     yawTensor = yaw_.unsqueeze(1)
+
+
+    # load backbone from a checkpoint
+    # print("Loading Backbone Checkpoint '{}'".format(model_root))
+    backbone.load_state_dict(torch.load(model_root))
+    backbone.to(device)
 
     # extract features
     backbone.eval()  # set to evaluation mode
@@ -78,35 +84,16 @@ def extractFeature(img_root, backbone, model_root, yaw,
             emb_batch = backbone(flipped.to(device), yawTensor.to(device)).cpu() + backbone(flipped.to(device),yawTensor.to(device)).cpu()
             features = l2_norm(emb_batch)
         else:
-            features = l2_norm(backbone(flipped.to(device)).cpu())
+            features = l2_norm(backbone(ccropped.to(device)).cpu())
 
     #     np.save("features.npy", features)
     #     features = np.load("features.npy")
+
     return features
-
-
-## simple test
-# if __name__ == "__main__":
-#     imagePath1 = "testImage/5.jpg"
-#     imagePath2 = "testImage/4.jpg"
-#     yawPath = "testImage/yawNpy.npy"
-#     yaw = np.load(yawPath)
-#     modelRoot = "model/2020-07-30-09-15_IR_SE_DREAM_101_Epoch_101_LOSS_0.005.pth"
-#     net = IR_SE_DREAM_101([112])
-#     feature1 = extractFeature(imagePath1, net, modelRoot,yaw[5])
-#     feature2 = extractFeature(imagePath2, net, modelRoot,yaw[4])
-#     # print("feature1.size()=",feature1.size())
-#     # print("feature2.size()=",feature2.size())
-#     feature1 = F.normalize(feature1)  # F.normalize只能处理两维的数据，L2归一化
-#     feature2 = F.normalize(feature2)
-#     distance = feature1.mm(feature2.t())
-#     distance = round(distance.item(),4)
-#     print("distance=",distance)
-
 
 # if __name__ == "__main__":
 #     imageDir = "testImage"
-#     yawPath = "yaw_npy/yawNpy.npy"
+#     yawPath = "yaw_npy/yawTest.npy"
 #     modelRoot = "model/2020-07-30-09-15_IR_SE_DREAM_101_Epoch_101_LOSS_0.005.pth"
 #     net = IR_SE_DREAM_101([112])
 #     imageNames = os.listdir(imageDir)
@@ -116,22 +103,26 @@ def extractFeature(img_root, backbone, model_root, yaw,
 #     for i in range(length):
 #         imagePath1 = os.path.join(imageDir,imageNames[i])
 #         feature1 = extractFeature(imagePath1, net, modelRoot, yaw[i])
+#         # feature1 = extract_feature(imagePath1, net, modelRoot, yaw[i])
 #         for j in range(i+1,length):
 #             imagePath2 = os.path.join(imageDir,imageNames[j])
+#             # feature2 = extract_feature(imagePath2, net, modelRoot,yaw[j])
 #             feature2 = extractFeature(imagePath2, net, modelRoot,yaw[j])
 #             # print("feature1.size()=",feature1.size())
 #             # print("feature2.size()=",feature2.size())
-#             feature1 = F.normalize(feature1)  # F.normalize只能处理两维的数据，L2归一化
-#             feature2 = F.normalize(feature2)
 #             distance = feature1.mm(feature2.t())
 #             distance = round(distance.item(), 4)
 #             print("{} and {}'s distance=".format(imageNames[i],imageNames[j]), distance)
 
 # if __name__ == "__main__":
-#     imageDirF = "/home/zhex/Videos/profileFace/monitor/xiangzhong/frontal"
-#     imageDirP = "/home/zhex/Videos/profileFace/monitor/xiangzhong/profile"
-#     yawF = "yaw_npy/yawFrontal.npy"
-#     yawP = "yaw_npy/yawProfile.npy"
+#     # imageDirF = "/home/zhex/Videos/profileFace/monitor/xiangzhong/frontal"
+#     imageDirF = "/home/zhex/Videos/profileFace/monitor/gangxin/frontal"
+#     # imageDirP = "/home/zhex/Videos/profileFace/monitor/xiangzhong/profile"
+#     imageDirP = "/home/zhex/Videos/profileFace/monitor/gangxin/profile"
+#     # yawF = "yaw_npy/yawMonitorFrontalzhengxiangzhong.npy"
+#     yawF = "yaw_npy/yawMonitorFrontallingangxin.npy"
+#     # yawP = "yaw_npy/yawMonitorProfilezhengxiangzhong.npy"
+#     yawP = "yaw_npy/yawMonitorProfilelingangxin.npy"
 #     modelRoot = "model/2020-07-30-09-15_IR_SE_DREAM_101_Epoch_101_LOSS_0.005.pth"
 #     net = IR_SE_DREAM_101([112])
 #     imageNamesF = os.listdir(imageDirF)
@@ -160,44 +151,82 @@ def extractFeature(img_root, backbone, model_root, yaw,
 
 
 # if __name__ == "__main__":
-#     imageDirF = "/home/zhex/Videos/profileFace/monitor/xiangzhong/frontal"
-#     imageDirP = "/home/zhex/Videos/profileFace/monitor/xiangzhong/profile"
-#     imageDirG = "/home/zhex/Documents/project/profileFace/pic/AI/zhengxiangzhong"
-#     yawF = "yaw_npy/yawFrontalZhengXiangZhong.npy"
-#     yawP = "yaw_npy/yawProfileZhengXiangZhong.npy"
-#     yawG= "yaw_npy/yawGalleryZhengXiangZhong.npy"
+#     imageDirGZ = "/home/zhex/Documents/project/profileFace/pic/AI/zhengxiangzhong"
+#     imageDirFZ = "/home/zhex/Videos/profileFace/monitor/xiangzhong/frontal"
+#     imageDirPZ = "/home/zhex/Videos/profileFace/monitor/xiangzhong/profile"
+#     yawGZ = "yaw_npy/yawGalleryZhengXiangZhong.npy"
+#     yawFZ = "yaw_npy/yawFrontalZhengXiangZhong.npy"
+#     yawPZ = "yaw_npy/yawProfileZhengXiangZhong.npy"
 #     modelRoot = "model/2020-07-30-09-15_IR_SE_DREAM_101_Epoch_101_LOSS_0.005.pth"
 #     net = IR_SE_DREAM_101([112])
+#     imageNamesGZ = os.listdir(imageDirGZ)
+#     imageNamesGZ.sort(key=lambda x:int(x[:-4]))
+#     yawNpGZ = np.load(yawGZ)
+#     lengthGZ = len(imageNamesGZ)
 #
-#     imageNamesF = os.listdir(imageDirF)
-#     imageNamesF.sort(key=lambda x:int(x[:-4]))
-#     yawNpF = np.load(yawF)
-#     lengthF = len(imageNamesF)
+#     imageNamesFZ = os.listdir(imageDirFZ)
+#     imageNamesFZ.sort(key=lambda x:int(x[:-4]))
+#     yawNpFZ = np.load(yawFZ)
+#     lengthFZ = len(imageNamesFZ)
 #
-#     imageNamesP = os.listdir(imageDirP)
-#     imageNamesP.sort(key=lambda x: int(x[:-4]))
-#     yawNpP = np.load(yawP)
-#     lengthP = len(imageNamesP)
-#
-#     imageNamesG = os.listdir(imageDirG)
-#     imageNamesG.sort(key=lambda x:int(x[:-4]))
-#     yawNpG = np.load(yawG)
-#     lengthG = len(imageNamesG)
+#     imageNamesPZ = os.listdir(imageDirPZ)
+#     imageNamesPZ.sort(key=lambda x: int(x[:-4]))
+#     yawNpPZ = np.load(yawPZ)
+#     lengthPZ = len(imageNamesPZ)
 #
 #
-#     for i in range(lengthP):
-#         imagePath1 = os.path.join(imageDirP,imageNamesP[i])
-#         feature1 = extractFeature(imagePath1, net, modelRoot, yawNpP[i])
-#         for j in range(lengthG):
-#             imagePath2 = os.path.join(imageDirG,imageNamesG[j])
-#             feature2 = extractFeature(imagePath2, net, modelRoot, yawNpG[j])
+#     for i in range(lengthGZ):
+#         imagePath1 = os.path.join(imageDirGZ,imageNamesGZ[i])
+#         feature1 = extractFeature(imagePath1, net, modelRoot, yawNpGZ[i])
+#         for j in range(lengthPZ):
+#             imagePath2 = os.path.join(imageDirPZ,imageNamesPZ[j])
+#             feature2 = extractFeature(imagePath2, net, modelRoot, yawNpPZ[j])
 #             # print("feature1.size()=",feature1.size())
 #             # print("feature2.size()=",feature2.size())
 #             feature1 = F.normalize(feature1)  # F.normalize只能处理两维的数据，L2归一化
 #             feature2 = F.normalize(feature2)
 #             distance = feature1.mm(feature2.t())
 #             distance = round(distance.item(), 4)
-#             print("{} and {}'s distance=".format(imageNamesP[i],imageNamesG[j]), distance)
+#             print("{} and {}'s distance=".format(imageNamesGZ[i],imageNamesPZ[j]), distance)
+
+# if __name__ == "__main__":
+#     imageDirGZ = "/home/zhex/Documents/project/profileFace/pic/AI/lingangxin"
+#     imageDirFZ = "/home/zhex/Videos/profileFace/monitor/gangxin/frontal"
+#     imageDirPZ = "/home/zhex/Videos/profileFace/monitor/gangxin/profile"
+#     yawGZ = "yaw_npy/yawGalleryLinGangXin.npy"
+#     yawFZ = "yaw_npy/yawFrontalLinGangXin.npy"
+#     yawPZ = "yaw_npy/yawProfileLinGangXin.npy"
+#     modelRoot = "model/2020-07-30-09-15_IR_SE_DREAM_101_Epoch_101_LOSS_0.005.pth"
+#     net = IR_SE_DREAM_101([112])
+#     imageNamesGZ = os.listdir(imageDirGZ)
+#     imageNamesGZ.sort(key=lambda x:int(x[:-4]))
+#     yawNpGZ = np.load(yawGZ)
+#     lengthGZ = len(imageNamesGZ)
+#
+#     imageNamesFZ = os.listdir(imageDirFZ)
+#     imageNamesFZ.sort(key=lambda x:int(x[:-4]))
+#     yawNpFZ = np.load(yawFZ)
+#     lengthFZ = len(imageNamesFZ)
+#
+#     imageNamesPZ = os.listdir(imageDirPZ)
+#     imageNamesPZ.sort(key=lambda x: int(x[:-4]))
+#     yawNpPZ = np.load(yawPZ)
+#     lengthPZ = len(imageNamesPZ)
+#
+#
+#     for i in range(lengthGZ):
+#         imagePath1 = os.path.join(imageDirGZ,imageNamesGZ[i])
+#         feature1 = extractFeature(imagePath1, net, modelRoot, yawNpGZ[i])
+#         for j in range(lengthPZ):
+#             imagePath2 = os.path.join(imageDirPZ,imageNamesPZ[j])
+#             feature2 = extractFeature(imagePath2, net, modelRoot, yawNpPZ[j])
+#             # print("feature1.size()=",feature1.size())
+#             # print("feature2.size()=",feature2.size())
+#             feature1 = F.normalize(feature1)  # F.normalize只能处理两维的数据，L2归一化
+#             feature2 = F.normalize(feature2)
+#             distance = feature1.mm(feature2.t())
+#             distance = round(distance.item(), 4)
+#             print("{} and {}'s distance=".format(imageNamesGZ[i],imageNamesPZ[j]), distance)
 
 if __name__ == "__main__":
     imageDirGZ = "/home/zhex/Documents/project/profileFace/pic/AI/zhengxiangzhong"
@@ -217,7 +246,6 @@ if __name__ == "__main__":
     yawNpGL = np.load(yawGL)
     lengthGL = len(imageNamesGL)
 
-
     for i in range(lengthGZ):
         imagePath1 = os.path.join(imageDirGZ,imageNamesGZ[i])
         feature1 = extractFeature(imagePath1, net, modelRoot, yawNpGZ[i])
@@ -231,5 +259,3 @@ if __name__ == "__main__":
             distance = feature1.mm(feature2.t())
             distance = round(distance.item(), 4)
             print("{} and {}'s distance=".format(imageNamesGZ[i],imageNamesGL[j]), distance)
-
-

@@ -22,7 +22,6 @@ import pickle
 
 # Support: ['IR_50', 'IR_101', 'IR_152', 'IR_SE_50', 'IR_SE_101', 'IR_SE_152']
 
-
 class Flatten(Module):
     def forward(self, input):
         return input.view(input.size(0), -1)
@@ -196,7 +195,7 @@ def get_blocks(num_layers):
 
 
 class Backbone(Module):
-    def __init__(self, input_size, num_layers, end2end, mode='ir'):
+    def __init__(self, input_size, num_layers, end2end, mode='ir_se'):
         super(Backbone, self).__init__()
         assert input_size[0] in [112, 224], "input_size should be [112, 112] or [224, 224]"
         assert num_layers in [50, 100, 152], "num_layers should be 50, 100 or 152"
@@ -243,7 +242,6 @@ class Backbone(Module):
                                 ReLU(inplace=True))
 
         self._initialize_weights()
-
 
     def forward(self, x, yaw):
         x = self.input_layer(x)
@@ -439,7 +437,7 @@ def IR_50(input_size):
 def IR_101(input_size):
     """Constructs a ir-101 model.
     """
-    model = Backbone(input_size, 100, True, 'ir')
+    model = Backbone(input_size, 100, 'ir')
 
     return model
 
@@ -488,6 +486,13 @@ def IR_SE_101(input_size):
     """Constructs a ir_se-101 model.
     """
     model = Backbone(input_size, 100, 'ir_se')
+
+    return model
+
+def IR_SE_PROFILE_101(input_size):
+    """Constructs a ir_se-101 model.
+    """
+    model = Backbone(input_size, 100, True, 'ir_se')
 
     return model
 

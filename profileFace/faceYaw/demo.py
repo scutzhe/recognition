@@ -6,6 +6,8 @@ from fsaLib.FSANET_model import *
 from faceDetection import faceDetectionCenterFace,faceDetectionCenterMutilFace
 from keras.layers import Average
 from tqdm import tqdm
+
+
 def draw_axis(img, yaw, pitch, roll, tdx=None, tdy=None, size = 50):
     print("yaw,roll,pitch=",yaw,roll,pitch)
     pitch = pitch * np.pi / 180
@@ -43,18 +45,6 @@ def sigmoid(x):
     return 1/(1+np.exp(-x))
 
 
-# def newAngle(yaw,pitch):
-#     """
-#     :param yaw:
-#     :param pitch:
-#     :return:
-#     """
-#     pitch_ = pitch * np.pi / 180
-#     yaw_ = yaw * np.pi / 180
-#     middleValue1 = pow(tan(yaw_),2) / pow(tan(pitch_),2)*(1 + pow(tan(yaw_),2)) + 1
-#     middleValue2 = sin(pitch_) * sqrt(middleValue1)
-#     # return asin(middleValue2)
-#     return middleValue2
 
 def newAngle(yaw,pitch):
     """
@@ -66,7 +56,9 @@ def newAngle(yaw,pitch):
     yaw_ = yaw * np.pi / 180
     middleValue1 = 1 + pow(sin(yaw_)/tan(pitch_),2)
     middleValue2 = sin(pitch_) * sqrt(middleValue1)
-    return asin(middleValue2)
+    middleValue3 = asin(middleValue2)
+    angle = abs(round(180 / np.pi * middleValue3,2))
+    return angle
 
 
 def yawCoefficient(yaw:float):
@@ -193,7 +185,7 @@ def draw_results_ssd(detected,input_img,faces,ad,img_size,img_w,img_h,model,time
                 
     return input_img #,time_network,time_plot
 
-def createModel(weightPath1,weightPath2,weightPath3):
+def createCapsuleModel(weightPath1,weightPath2,weightPath3):
     """
     @param weightPath1:
     @param weightPath2:
@@ -233,6 +225,50 @@ def createModel(weightPath1,weightPath2,weightPath3):
     x2 = model2(inputs) #var
     x3 = model3(inputs) #w/o
     avg_model = Average()([x1,x2,x3])
+    model = Model(inputs=inputs, outputs=avg_model)
+    return model
+
+
+def createMetricModel(weightPath1, weightPath2, weightPath3):
+    """
+    @param weightPath1:
+    @param weightPath2:
+    @param weightPath3:
+    @return:
+    """
+    num_capsule = 3
+    dim_capsule = 16
+    routings = 2
+    stage_num = [3, 3, 3]
+    lambda_d = 1
+    num_classes = 3
+    image_size = 64
+    num_primcaps = 7 * 3
+    m_dim = 5
+    S_set = [num_capsule, dim_capsule, routings, num_primcaps, m_dim]
+
+    model1 = FSA_net_Metric(image_size, num_classes, stage_num, lambda_d, S_set)()
+    model2 = FSA_net_Var_Metric(image_size, num_classes, stage_num, lambda_d, S_set)()
+
+    num_primcaps = 8 * 8 * 3
+    S_set = [num_capsule, dim_capsule, routings, num_primcaps, m_dim]
+    model3 = FSA_net_noS_Metric(image_size, num_classes, stage_num, lambda_d, S_set)()
+
+    print('Loading models ...')
+    model1.load_weights(weightPath1)
+    print('Finished loading model 1.')
+
+    model2.load_weights(weightPath2)
+    print('Finished loading model 2.')
+
+    model3.load_weights(weightPath3)
+    print('Finished loading model 3.')
+
+    inputs = Input(shape=(64, 64, 3))
+    x1 = model1(inputs)  # 1x1
+    x2 = model2(inputs)  # var
+    x3 = model3(inputs)  # w/o
+    avg_model = Average()([x1, x2, x3])
     model = Model(inputs=inputs, outputs=avg_model)
     return model
 
@@ -312,6 +348,68 @@ def recover(x):
 #     yaw = angleNoDetection(imgRGB)
 #     print("yaw=",yaw)
 
+if __name__ == "__main__":
+    ### 300W_LP
+    ## capsule
+    # weightPath1 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_capsule_3_16_2_21_5/fsanet_capsule_3_16_2_21_5.h5'
+    # weightPath2 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_var_capsule_3_16_2_21_5/fsanet_var_capsule_3_16_2_21_5.h5'
+    # weightPath3 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_noS_capsule_3_16_2_192_5/fsanet_noS_capsule_3_16_2_192_5.h5'
+
+    ## metric
+    weightPath1 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_metric_3_16_2_21_5/fsanet_metric_3_16_2_21_5.h5'
+    weightPath2 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_var_metric_3_16_2_21_5/fsanet_var_metric_3_16_2_21_5.h5'
+    weightPath3 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_noS_metric_3_16_2_192_5/fsanet_noS_metric_3_16_2_192_5.h5'
+
+
+    # model = createCapsuleModel(weightPath1,weightPath2,weightPath3)
+    model = createMetricModel(weightPath1,weightPath2,weightPath3)
+    frontalFaceDir = "/home/zhex/test_result/faceYaw/luogangjiankongtest/frontal"
+    profileFaceDir = "/home/zhex/test_result/faceYaw/luogangjiankongtest/profile"
+    frontalNames = os.listdir(frontalFaceDir)
+    profileNames = os.listdir(profileFaceDir)
+    totalNumFrontal = len(frontalNames)
+    totalNumProfile = len(profileNames)
+    numFrontal = 0
+    numProfile = 0
+    numF =0
+    numP = 0
+    num = 0
+    total = totalNumFrontal + totalNumProfile
+
+    for imageName in tqdm(frontalNames):
+        imagePath = os.path.join(frontalFaceDir, imageName)
+        image = cv2.imread(imagePath)
+        h, w = image.shape[:2]
+        image = image[h // 4:3 * h // 4, w // 4:3 * w // 4, :]
+        flag = min(image.shape[0], image.shape[1])
+        if flag < 40:
+            numF += 1
+            continue
+        imgRGB = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        yaw,_,_ = angleNoDetection(imgRGB)
+        if abs(yaw) <= 20:
+            numFrontal += 1
+
+    for imageName in tqdm(profileNames):
+        imagePath = os.path.join(profileFaceDir, imageName)
+        image = cv2.imread(imagePath)
+        h, w = image.shape[:2]
+        image = image[h // 4:3 * h // 4, w // 4:3 * w // 4, :]
+        flag = min(image.shape[0], image.shape[1])
+        if flag < 40:
+            numP += 1
+            continue
+        imgRGB = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        yaw,_,_ = angleNoDetection(imgRGB)
+        if abs(yaw) > 20:
+            numProfile += 1
+
+    num = numFrontal + numProfile
+    print("faceYaw")
+    print("numFrontal/(totalNumFrontal - numF)=", numFrontal / (totalNumFrontal - numF))
+    print("numProfile/(totalNumProfile - numP)=", numProfile / (totalNumProfile - numP))
+    print("num/(total - numF - numP)=", round(num / (total - numF - numP), 4))
+
 
 ## face classification
 # if __name__ == '__main__':
@@ -355,49 +453,154 @@ def recover(x):
 #                 continue
 #         else:
 #             break
+
 ## face classification
-if __name__ == '__main__':
-    cv2.ocl.setUseOpenCL(False)
-    weightPath1 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_capsule_3_16_2_21_5/fsanet_capsule_3_16_2_21_5.h5'
-    weightPath2 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_var_capsule_3_16_2_21_5/fsanet_var_capsule_3_16_2_21_5.h5'
-    weightPath3 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_noS_capsule_3_16_2_192_5/fsanet_noS_capsule_3_16_2_192_5.h5'
-    model = createModel(weightPath1,weightPath2,weightPath3)
-    # videoDir = "/home/zhex/Videos/profileFace/hall/test"
-    # videoNames = os.listdir(videoDir)
-    # videoNames.sort(key=lambda x:int(x[:-4]))
-    # for videoName in videoNames:
-    #     videoPath = os.path.join(videoDir,videoName)
-    #     print("videoPath=",videoPath)
-    videoPath = "/home/zhex/Videos/profileFace/hall/test/05.mp4"
-    videoName = videoPath.split("/")[-1]
-    vid = cv2.VideoCapture(videoPath)
-    # fourcc = cv2.VideoWriter_fourcc(*'XVID')
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    # out = cv2.VideoWriter(videoName,fourcc,10,(2560,1440))
-    out = cv2.VideoWriter(videoName,fourcc,10,(1920,1080))
-    while True:
-        flag, frame = vid.read()
-        # print("frame.shape=",frame.shape)
-        if flag:
-            imgBGR = cv2.resize(frame,(0,0),fx=0.5,fy=0.5,interpolation=cv2.INTER_CUBIC)
-            imgRGB = cv2.cvtColor(imgBGR,cv2.COLOR_BGR2RGB)
-            imgDict = faceDetectionCenterMutilFace(imgRGB)
-            if len(imgDict)>0:
-               for key,value in imgDict.items():
-                    yaw, pitch, roll = angleNoDetection(value)
-                    newYaw = newAngle(yaw,pitch)
-                    # print("newYaw=",newYaw)
-                    txt =  abs(round(180 / np.pi * newYaw,2))
-                    txt = 0 if txt < 20 else 1
-                    cv2.rectangle(frame,(2*key[0],2*key[1]),(2*key[2],2*key[3]),(0,0,255),2)
-                    cv2.putText(frame,str(txt),(2*key[0],2*key[1]),cv2.FONT_HERSHEY_SIMPLEX,1,(0,0,255),2)
-                    out.write(frame)
-                    cv2.imshow("frame",frame)
-                    cv2.waitKey(1)
-            else:
-                continue
-        else:
-            break
+# if __name__ == '__main__':
+#     cv2.ocl.setUseOpenCL(False)
+#     weightPath1 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_capsule_3_16_2_21_5/fsanet_capsule_3_16_2_21_5.h5'
+#     weightPath2 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_var_capsule_3_16_2_21_5/fsanet_var_capsule_3_16_2_21_5.h5'
+#     weightPath3 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_noS_capsule_3_16_2_192_5/fsanet_noS_capsule_3_16_2_192_5.h5'
+#     model = createModel(weightPath1,weightPath2,weightPath3)
+#     # videoDir = "/home/zhex/Videos/profileFace/hall/test"
+#     # videoNames = os.listdir(videoDir)
+#     # videoNames.sort(key=lambda x:int(x[:-4]))
+#     # for videoName in videoNames:
+#     #     videoPath = os.path.join(videoDir,videoName)
+#     #     print("videoPath=",videoPath)
+#     videoPath = "/home/zhex/Videos/profileFace/hall/test/06.mp4"
+#     videoName = videoPath.split("/")[-1]
+#     vid = cv2.VideoCapture(videoPath)
+#     # fourcc = cv2.VideoWriter_fourcc(*'XVID')
+#     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+#     # out = cv2.VideoWriter(videoName,fourcc,10,(2560,1440))
+#     out = cv2.VideoWriter(videoName,fourcc,10,(1920,1080))
+#     while True:
+#         flag, frame = vid.read()
+#         # print("frame.shape=",frame.shape)
+#         if flag:
+#             imgBGR = cv2.resize(frame,(0,0),fx=0.5,fy=0.5,interpolation=cv2.INTER_CUBIC)
+#             imgRGB = cv2.cvtColor(imgBGR,cv2.COLOR_BGR2RGB)
+#             imgDict = faceDetectionCenterMutilFace(imgRGB)
+#             if len(imgDict)>0:
+#                for key,value in imgDict.items():
+#                     yaw, pitch, roll = angleNoDetection(value)
+#                     newYaw = newAngle(yaw,pitch)
+#                     # print("newYaw=",newYaw)
+#                     txt =  abs(round(180 / np.pi * newYaw,2))
+#                     txt = 0 if txt < 20 else 1
+#                     cv2.rectangle(frame,(2*key[0],2*key[1]),(2*key[2],2*key[3]),(0,0,255),2)
+#                     cv2.putText(frame,str(txt),(2*key[0],2*key[1]),cv2.FONT_HERSHEY_SIMPLEX,1,(0,0,255),2)
+#                     out.write(frame)
+#                     cv2.imshow("frame",frame)
+#                     cv2.waitKey(1)
+#             else:
+#                 continue
+#         else:
+#             break
+
+
+## face crop
+# if __name__ == '__main__':
+#     cv2.ocl.setUseOpenCL(False)
+#     weightPath1 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_capsule_3_16_2_21_5/fsanet_capsule_3_16_2_21_5.h5'
+#     weightPath2 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_var_capsule_3_16_2_21_5/fsanet_var_capsule_3_16_2_21_5.h5'
+#     weightPath3 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_noS_capsule_3_16_2_192_5/fsanet_noS_capsule_3_16_2_192_5.h5'
+#     model = createModel(weightPath1,weightPath2,weightPath3)
+#     # videoDir = "/home/zhex/Videos/profileFace/hall/test"
+#     # videoNames = os.listdir(videoDir)
+#     # videoNames.sort(key=lambda x:int(x[:-4]))
+#     # for videoName in videoNames:
+#     #     videoPath = os.path.join(videoDir,videoName)
+#     #     print("videoPath=",videoPath)
+#     videoPath = "/home/zhex/Videos/profileFace/luogang/3m/不戴口罩_h3米d1米_d2米_d3米.mp4"
+#     vid = cv2.VideoCapture(videoPath)
+#     frontalSaveDir = "/home/zhex/Videos/profileFace/monitor/xiangzhong/frontal"
+#     profileSaveDir = "/home/zhex/Videos/profileFace/monitor/xiangzhong/profile"
+#     indexF = 0
+#     indexP = 0
+#     step = 0
+#     while True:
+#         flag, frame = vid.read()
+#         # print("frame.shape=",frame.shape)
+#         if flag:
+#             step += 1
+#             if step % 1 == 0:
+#                 imgBGR = cv2.resize(frame,(0,0),fx=0.5,fy=0.5,interpolation=cv2.INTER_CUBIC)
+#                 imgRGB = cv2.cvtColor(imgBGR,cv2.COLOR_BGR2RGB)
+#                 imgDict = faceDetectionCenterMutilFace(imgRGB)
+#                 if len(imgDict)>0:
+#                    for key,value in imgDict.items():
+#                         yaw, pitch, roll = angleNoDetection(value)
+#                         newYaw = newAngle(yaw,pitch)
+#                         txt =  abs(round(180 / np.pi * newYaw,2))
+#                         flag = 0 if txt < 20 else 1
+#                         print("flag=",flag)
+#                         x1 = 2 * key[0]
+#                         y1 = 2 * key[1]
+#                         x2 = 2 * key[2]
+#                         y2 = 2 * key[3]
+#                         if flag == 0:
+#                             if not os.path.exists(frontalSaveDir):
+#                                 os.makedirs(frontalSaveDir)
+#                             frontalFace = frame[y1:y2,x1:x2,:]
+#                             cv2.imwrite(os.path.join(frontalSaveDir,"{}.png".format(indexF)),frontalFace)
+#                             indexF += 1
+#                         else:
+#                             if not os.path.exists(profileSaveDir):
+#                                 os.makedirs(profileSaveDir)
+#                             profileFace = frame[y1:y2, x1:x2, :]
+#                             cv2.imwrite(os.path.join(profileSaveDir,"{}.png".format(indexP)), profileFace)
+#                             indexP += 1
+#                 else:
+#                     continue
+#         else:
+#             break
+
+
+## test on luogang monitor videos
+# if __name__ == '__main__':
+#     cv2.ocl.setUseOpenCL(False)
+#     weightPath1 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_capsule_3_16_2_21_5/fsanet_capsule_3_16_2_21_5.h5'
+#     weightPath2 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_var_capsule_3_16_2_21_5/fsanet_var_capsule_3_16_2_21_5.h5'
+#     weightPath3 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_noS_capsule_3_16_2_192_5/fsanet_noS_capsule_3_16_2_192_5.h5'
+#     model = createModel(weightPath1,weightPath2,weightPath3)
+#     videoPath = "/home/zhex/Videos/profileFace/luogang/3m/不戴口罩_h3米d1米_d2米_d3米.mp4"
+#     vid = cv2.VideoCapture(videoPath)
+#     videoName = videoPath.split("/")[-1]
+#     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+#     out = cv2.VideoWriter(videoName, fourcc, 10, (2560, 1440))
+#     while True:
+#         flag, frame = vid.read()
+#         # print("frame.shape=",frame.shape)
+#         if flag:
+#             imgBGR = cv2.resize(frame,(0,0),fx=0.5,fy=0.5,interpolation=cv2.INTER_CUBIC)
+#             imgRGB = cv2.cvtColor(imgBGR,cv2.COLOR_BGR2RGB)
+#             imgDict = faceDetectionCenterMutilFace(imgRGB)
+#             if len(imgDict)>0:
+#                for key,value in imgDict.items():
+#                     yaw, pitch, roll = angleNoDetection(value)
+#                     β = newAngle(yaw,pitch)
+#                     # print("β, yaw=",β, yaw)
+#                     txt = str(β) + "_" + str(yaw)
+#                     print("txt=",txt)
+#                     x1 = 2 * key[0]
+#                     y1 = 2 * key[1]
+#                     x2 = 2 * key[2]
+#                     y2 = 2 * key[3]
+#                     # x1 = key[0]
+#                     # y1 = key[1]
+#                     # x2 = key[2]
+#                     # y2 = key[3]
+#                     cv2.rectangle(frame, (x1,y1), (x2,y2), (0, 0, 255), 2)
+#                     cv2.putText(frame,txt,(x1,y1),cv2.FONT_HERSHEY_SIMPLEX,1,(0,0,255),2)
+#                     # out.write(frame)
+#                     cv2.imshow("frame",imgBGR)
+#                     cv2.waitKey(1)
+#             else:
+#                 continue
+#         else:
+#             break
+
 
 # multi faces
 # if __name__ == '__main__':
@@ -684,17 +887,24 @@ if __name__ == '__main__':
 #     weightPath2 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_var_capsule_3_16_2_21_5/fsanet_var_capsule_3_16_2_21_5.h5'
 #     weightPath3 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_noS_capsule_3_16_2_192_5/fsanet_noS_capsule_3_16_2_192_5.h5'
 #     model = createModel(weightPath1,weightPath2,weightPath3)
-#     imageDir = "/home/zhex/git_me/recognition/occlusion_face_recognition/testImage"
-#     imageNames = os.listdir(imageDir)
+#     # imageDirF = "/home/zhex/Videos/profileFace/monitor/xiangzhong/frontal"
+#     # imageDirP = "/home/zhex/Videos/profileFace/monitor/xiangzhong/profile"
+#     # imageDirF = "/home/zhex/Videos/profileFace/monitor/gangxin/frontal"
+#     imageDirP = "/home/zhex/Videos/profileFace/monitor/gangxin/profile"
+#     # imageDirG = "/home/zhex/Documents/project/profileFace/pic/AI/lingangxin"
+#     # imageDirT = "/home/zhex/git_me/recognition/occlusion_face_recognition/testImage"
+#     imageNames = os.listdir(imageDirP)
 #     imageNames.sort(key = lambda x: int(x[:-4]))
 #     yawSum = []
 #     for imgName in imageNames:
-#         imagePath = os.path.join(imageDir,imgName)
+#         imagePath = os.path.join(imageDirP,imgName)
+#         # print("imagePath=",imagePath)
 #         imgBGR = cv2.imread(imagePath)
 #         imgRGB = cv2.cvtColor(imgBGR,cv2.COLOR_BGR2RGB)
-#         yaw = angleNoDetection(imgRGB)
-#         coefficient = yawCoefficient(yaw)
+#         yaw, pitch, roll = angleNoDetection(imgRGB)
+#         # print("yaw=",yaw)
+#         coefficient = yawCoefficient(abs(yaw))
 #         yawSum.append(coefficient)
 #         # print("{}_yaw=".format(imgName),coefficient)
 #     yawNpy = np.array(yawSum)
-#     np.save("yawNpy.npy",yawNpy)
+#     np.save("yawMonitorProfilelingangxin.npy",yawNpy)

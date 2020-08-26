@@ -11,6 +11,7 @@
 import os
 import cv2
 import numpy as np
+from tqdm import tqdm
 from centerface.prjPython.centerface import CenterFace
 from fixBox.minitools import fixBox,fix_box,crop
 
@@ -81,39 +82,42 @@ def faceDetectionCenterMutilFace(img: np.array, landmarks=True):
     else:
         return imgs
 
-# if __name__ == "__main__":
-    # imgPath = "testImage/1.jpg"
-    # img = cv2.imread(imgPath)
-    # newImg = faceDetectionCenterFace(img)
-    # cv2.imshow("newImg",newImg)
-    # cv2.waitKey(1000)
-
-    # videoPath = "/home/zhex/Videos/profileFace/20200713174000.avi"
-    # vid = cv2.VideoCapture(videoPath)
-    # while True:
-    #     flag, frame = vid.read()
-    #     if flag:
-    #         img = cv2.resize(frame, (0, 0), fx=0.5, fy=0.5, interpolation=cv2.INTER_CUBIC)
-    #         newImg = faceDetectionCenterFace(img)
-    #         cv2.imshow("img",newImg)
-    #         cv2.waitKey(1)
-
 if __name__ == "__main__":
-    imageDir = "/home/zhex/Documents/project/profileFace/pic/AI"
-    for idName in os.listdir(imageDir):
-        idDir = os.path.join(imageDir,idName)
-        imageNames = os.listdir(idDir)
-        imageNames.sort(key=lambda x:int(x[:-4]))
-        saveDir = os.path.join("/home/zhex/Documents/project/profileFace/pic","new",idName)
-        if not os.path.exists(saveDir):
-            os.makedirs(saveDir)
-        index = 0
-        for imageName in imageNames:
-            imagePath = os.path.join(imageDir,idName,imageName)
-            print("imagePath=",imagePath)
-            image = cv2.imread(imagePath)
-            newImg,_ = faceDetectionCenterFace(image)
-            # print("newImg.shape=",newImg.shape)
-            cv2.imwrite(saveDir + "/" + "{}.png".format(index),newImg)
-            index += 1
+    image_dir = "/home/zhex/data/818capture/pic1"
+    save_dir = "/home/zhex/data/monitor/images"
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+    index = 0
+    for name in tqdm(os.listdir(image_dir)):
+        image_path = os.path.join(image_dir,name)
+        try:
+            image = cv2.imread(image_path)
+            img_dict = faceDetectionCenterMutilFace(image)
+            for key,value in img_dict.items():
+                index += 1
+                cv2.imshow("img",value)
+                cv2.waitKey(10000)
+                cv2.imwrite(save_dir + "/" + "{}.png".format(index),value)
+        except Exception as e:
+            print(e)
+
+
+# if __name__ == "__main__":
+#     imageDir = "/home/zhex/Documents/project/profileFace/pic/AI"
+#     for idName in os.listdir(imageDir):
+#         idDir = os.path.join(imageDir,idName)
+#         imageNames = os.listdir(idDir)
+#         imageNames.sort(key=lambda x:int(x[:-4]))
+#         saveDir = os.path.join("/home/zhex/Documents/project/profileFace/pic","new",idName)
+#         if not os.path.exists(saveDir):
+#             os.makedirs(saveDir)
+#         index = 0
+#         for imageName in imageNames:
+#             imagePath = os.path.join(imageDir,idName,imageName)
+#             print("imagePath=",imagePath)
+#             image = cv2.imread(imagePath)
+#             newImg,_ = faceDetectionCenterFace(image)
+#             # print("newImg.shape=",newImg.shape)
+#             cv2.imwrite(saveDir + "/" + "{}.png".format(index),newImg)
+#             index += 1
 

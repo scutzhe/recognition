@@ -439,6 +439,36 @@ def split_dataset(train_frontal_dir,train_profile_dir,test_frontal_dir,test_prof
 
     print("indexF,indexP = ",indexF, indexP)
 
+if __name__ == '__main__':
+    weightPath1 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_capsule_3_16_2_21_5/fsanet_capsule_3_16_2_21_5.h5'
+    weightPath2 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_var_capsule_3_16_2_21_5/fsanet_var_capsule_3_16_2_21_5.h5'
+    weightPath3 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_noS_capsule_3_16_2_192_5/fsanet_noS_capsule_3_16_2_192_5.h5'
+    model = createCapsuleModel(weightPath1,weightPath2,weightPath3)
+    rootPath = "/home/zhex/data/profiledatasetNoVal/profileAsia/train"
+    save_dir = "/home/zhex/Downloads/face_classification_full/images"
+    index = 0
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+    for root, dirs, names in tqdm(os.walk(rootPath)):
+        names.sort(key=lambda x:int(x[:-4]))
+        for imgName in names:
+            imgPath = os.path.join(root,imgName)
+            # print("imgPath=",imgPath)
+            ID = str(imgPath.split("/")[-2]) + "/" + str(imgPath.split("/")[-1])
+            # print("ID=",ID)
+            imgBGR = cv2.imread(imgPath)
+            imgRGB = cv2.cvtColor(imgBGR,cv2.COLOR_BGR2RGB)
+            try:
+                yaw,_,_ = angleNoDetection(imgRGB)
+                yaw = abs(yaw)
+                yaw = int(yaw)
+                index += 1
+                shutil.copy(imgPath,save_dir)
+                old_path = os.path.join(save_dir,imgName)
+                new_path = os.path.join(save_dir,"{}_{}.jpg".format(index,yaw))
+                os.rename(old_path,new_path)
+            except Exception as e:
+                print(e)
 ## step 1
 # if __name__ == '__main__':
 #     weightPath1 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_capsule_3_16_2_21_5/fsanet_capsule_3_16_2_21_5.h5'
@@ -492,37 +522,37 @@ def split_dataset(train_frontal_dir,train_profile_dir,test_frontal_dir,test_prof
 #             except Exception as e:
 #                 print(e)
 
-if __name__ == '__main__':
-    weightPath1 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_capsule_3_16_2_21_5/fsanet_capsule_3_16_2_21_5.h5'
-    weightPath2 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_var_capsule_3_16_2_21_5/fsanet_var_capsule_3_16_2_21_5.h5'
-    weightPath3 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_noS_capsule_3_16_2_192_5/fsanet_noS_capsule_3_16_2_192_5.h5'
-    model = createCapsuleModel(weightPath1,weightPath2,weightPath3)
-    rootPath = "/home/zhex/data/profiledatasetNoVal/profileAsia/train"
-    middle_dir = "/home/zhex/Downloads/middle"
-    indexM = 0
-    if not os.path.exists(middle_dir):
-        os.makedirs(middle_dir)
-    for root, dirs, names in tqdm(os.walk(rootPath)):
-        names.sort(key=lambda x:int(x[:-4]))
-        for imgName in names:
-            imgPath = os.path.join(root,imgName)
-            # print("imgPath=",imgPath)
-            ID = str(imgPath.split("/")[-2]) + "/" + str(imgPath.split("/")[-1])
-            # print("ID=",ID)
-            imgBGR = cv2.imread(imgPath)
-            imgRGB = cv2.cvtColor(imgBGR,cv2.COLOR_BGR2RGB)
-            try:
-                yaw,_,_ = angleNoDetection(imgRGB)
-                yaw = abs(yaw)
-                yaw = int(yaw)
-                if yaw > 20 and yaw < 45:
-                    indexM += 1
-                    shutil.copy(imgPath, middle_dir)
-                    old_path = os.path.join(middle_dir, imgName)
-                    new_path = os.path.join(middle_dir, "{}_{}.jpg".format(indexM, yaw))
-                    os.rename(old_path, new_path)
-            except Exception as e:
-                print(e)
+# if __name__ == '__main__':
+#     weightPath1 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_capsule_3_16_2_21_5/fsanet_capsule_3_16_2_21_5.h5'
+#     weightPath2 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_var_capsule_3_16_2_21_5/fsanet_var_capsule_3_16_2_21_5.h5'
+#     weightPath3 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_noS_capsule_3_16_2_192_5/fsanet_noS_capsule_3_16_2_192_5.h5'
+#     model = createCapsuleModel(weightPath1,weightPath2,weightPath3)
+#     rootPath = "/home/zhex/data/profiledatasetNoVal/profileAsia/train"
+#     middle_dir = "/home/zhex/Downloads/middle"
+#     indexM = 0
+#     if not os.path.exists(middle_dir):
+#         os.makedirs(middle_dir)
+#     for root, dirs, names in tqdm(os.walk(rootPath)):
+#         names.sort(key=lambda x:int(x[:-4]))
+#         for imgName in names:
+#             imgPath = os.path.join(root,imgName)
+#             # print("imgPath=",imgPath)
+#             ID = str(imgPath.split("/")[-2]) + "/" + str(imgPath.split("/")[-1])
+#             # print("ID=",ID)
+#             imgBGR = cv2.imread(imgPath)
+#             imgRGB = cv2.cvtColor(imgBGR,cv2.COLOR_BGR2RGB)
+#             try:
+#                 yaw,_,_ = angleNoDetection(imgRGB)
+#                 yaw = abs(yaw)
+#                 yaw = int(yaw)
+#                 if yaw > 20 and yaw < 45:
+#                     indexM += 1
+#                     shutil.copy(imgPath, middle_dir)
+#                     old_path = os.path.join(middle_dir, imgName)
+#                     new_path = os.path.join(middle_dir, "{}_{}.jpg".format(indexM, yaw))
+#                     os.rename(old_path, new_path)
+#             except Exception as e:
+#                 print(e)
 
 ## step 2
 # if __name__ == "__main__":

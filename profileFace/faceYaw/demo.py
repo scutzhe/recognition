@@ -1,9 +1,10 @@
 import os
 import cv2
+import csv
 import numpy as np
 from math import tan, cos, sin, asin, log, sqrt, pow
 from fsaLib.FSANET_model import *
-from faceDetection import faceDetectionCenterFace,faceDetectionCenterMutilFace
+from face_detection import faceDetectionCenterFace,faceDetectionCenterMutilFace
 from keras.layers import Average
 from tqdm import tqdm
 
@@ -82,7 +83,8 @@ def angleNoDetection(img,):
     yaw = p_result[0][0]
     pitch = p_result[0][1]
     roll = p_result[0][2]
-    return round(yaw,2), round(pitch,2), round(roll,2)
+    # return round(yaw,2), round(pitch,2), round(roll,2)
+    return format(yaw,".6f")
 
 
 def angle(detected,input_img,faces,ad,img_size,img_w,img_h,model):
@@ -348,67 +350,67 @@ def recover(x):
 #     yaw = angleNoDetection(imgRGB)
 #     print("yaw=",yaw)
 
-if __name__ == "__main__":
-    ### 300W_LP
-    ## capsule
-    # weightPath1 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_capsule_3_16_2_21_5/fsanet_capsule_3_16_2_21_5.h5'
-    # weightPath2 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_var_capsule_3_16_2_21_5/fsanet_var_capsule_3_16_2_21_5.h5'
-    # weightPath3 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_noS_capsule_3_16_2_192_5/fsanet_noS_capsule_3_16_2_192_5.h5'
-
-    ## metric
-    weightPath1 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_metric_3_16_2_21_5/fsanet_metric_3_16_2_21_5.h5'
-    weightPath2 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_var_metric_3_16_2_21_5/fsanet_var_metric_3_16_2_21_5.h5'
-    weightPath3 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_noS_metric_3_16_2_192_5/fsanet_noS_metric_3_16_2_192_5.h5'
-
-
-    # model = createCapsuleModel(weightPath1,weightPath2,weightPath3)
-    model = createMetricModel(weightPath1,weightPath2,weightPath3)
-    frontalFaceDir = "/home/zhex/test_result/faceYaw/luogangjiankongtest/frontal"
-    profileFaceDir = "/home/zhex/test_result/faceYaw/luogangjiankongtest/profile"
-    frontalNames = os.listdir(frontalFaceDir)
-    profileNames = os.listdir(profileFaceDir)
-    totalNumFrontal = len(frontalNames)
-    totalNumProfile = len(profileNames)
-    numFrontal = 0
-    numProfile = 0
-    numF =0
-    numP = 0
-    num = 0
-    total = totalNumFrontal + totalNumProfile
-
-    for imageName in tqdm(frontalNames):
-        imagePath = os.path.join(frontalFaceDir, imageName)
-        image = cv2.imread(imagePath)
-        h, w = image.shape[:2]
-        image = image[h // 4:3 * h // 4, w // 4:3 * w // 4, :]
-        flag = min(image.shape[0], image.shape[1])
-        if flag < 40:
-            numF += 1
-            continue
-        imgRGB = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        yaw,_,_ = angleNoDetection(imgRGB)
-        if abs(yaw) <= 20:
-            numFrontal += 1
-
-    for imageName in tqdm(profileNames):
-        imagePath = os.path.join(profileFaceDir, imageName)
-        image = cv2.imread(imagePath)
-        h, w = image.shape[:2]
-        image = image[h // 4:3 * h // 4, w // 4:3 * w // 4, :]
-        flag = min(image.shape[0], image.shape[1])
-        if flag < 40:
-            numP += 1
-            continue
-        imgRGB = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        yaw,_,_ = angleNoDetection(imgRGB)
-        if abs(yaw) > 20:
-            numProfile += 1
-
-    num = numFrontal + numProfile
-    print("faceYaw")
-    print("numFrontal/(totalNumFrontal - numF)=", numFrontal / (totalNumFrontal - numF))
-    print("numProfile/(totalNumProfile - numP)=", numProfile / (totalNumProfile - numP))
-    print("num/(total - numF - numP)=", round(num / (total - numF - numP), 4))
+# if __name__ == "__main__":
+#     ### 300W_LP
+#     ## capsule
+#     # weightPath1 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_capsule_3_16_2_21_5/fsanet_capsule_3_16_2_21_5.h5'
+#     # weightPath2 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_var_capsule_3_16_2_21_5/fsanet_var_capsule_3_16_2_21_5.h5'
+#     # weightPath3 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_noS_capsule_3_16_2_192_5/fsanet_noS_capsule_3_16_2_192_5.h5'
+#
+#     ## metric
+#     weightPath1 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_metric_3_16_2_21_5/fsanet_metric_3_16_2_21_5.h5'
+#     weightPath2 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_var_metric_3_16_2_21_5/fsanet_var_metric_3_16_2_21_5.h5'
+#     weightPath3 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_noS_metric_3_16_2_192_5/fsanet_noS_metric_3_16_2_192_5.h5'
+#
+#
+#     # model = createCapsuleModel(weightPath1,weightPath2,weightPath3)
+#     model = createMetricModel(weightPath1,weightPath2,weightPath3)
+#     frontalFaceDir = "/home/zhex/test_result/faceYaw/luogangjiankongtest/frontal"
+#     profileFaceDir = "/home/zhex/test_result/faceYaw/luogangjiankongtest/profile"
+#     frontalNames = os.listdir(frontalFaceDir)
+#     profileNames = os.listdir(profileFaceDir)
+#     totalNumFrontal = len(frontalNames)
+#     totalNumProfile = len(profileNames)
+#     numFrontal = 0
+#     numProfile = 0
+#     numF =0
+#     numP = 0
+#     num = 0
+#     total = totalNumFrontal + totalNumProfile
+#
+#     for imageName in tqdm(frontalNames):
+#         imagePath = os.path.join(frontalFaceDir, imageName)
+#         image = cv2.imread(imagePath)
+#         h, w = image.shape[:2]
+#         image = image[h // 4:3 * h // 4, w // 4:3 * w // 4, :]
+#         flag = min(image.shape[0], image.shape[1])
+#         if flag < 40:
+#             numF += 1
+#             continue
+#         imgRGB = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+#         yaw,_,_ = angleNoDetection(imgRGB)
+#         if abs(yaw) <= 20:
+#             numFrontal += 1
+#
+#     for imageName in tqdm(profileNames):
+#         imagePath = os.path.join(profileFaceDir, imageName)
+#         image = cv2.imread(imagePath)
+#         h, w = image.shape[:2]
+#         image = image[h // 4:3 * h // 4, w // 4:3 * w // 4, :]
+#         flag = min(image.shape[0], image.shape[1])
+#         if flag < 40:
+#             numP += 1
+#             continue
+#         imgRGB = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+#         yaw,_,_ = angleNoDetection(imgRGB)
+#         if abs(yaw) > 20:
+#             numProfile += 1
+#
+#     num = numFrontal + numProfile
+#     print("faceYaw")
+#     print("numFrontal/(totalNumFrontal - numF)=", numFrontal / (totalNumFrontal - numF))
+#     print("numProfile/(totalNumProfile - numP)=", numProfile / (totalNumProfile - numP))
+#     print("num/(total - numF - numP)=", round(num / (total - numF - numP), 4))
 
 
 ## face classification
@@ -766,48 +768,59 @@ if __name__ == "__main__":
 #     print("num_pre_val=",num_pre_val)
 
 
-# if __name__ == '__main__':
-#     weightPath1 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_capsule_3_16_2_21_5/fsanet_capsule_3_16_2_21_5.h5'
-#     weightPath2 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_var_capsule_3_16_2_21_5/fsanet_var_capsule_3_16_2_21_5.h5'
-#     weightPath3 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_noS_capsule_3_16_2_192_5/fsanet_noS_capsule_3_16_2_192_5.h5'
-#     model = createModel(weightPath1,weightPath2,weightPath3)
-#     rootPath = "/home/zhex/data/imgs_glintasia"
-#     trainImage = open("originImage.txt","a")
-#     trainLable = open("originLabel.txt","a")
-#     num_act = 0
-#     num_pre = 0
-#     IDs = os.listdir(rootPath)
-#     IDs.sort(key=lambda x: int(x))
-#     for id in tqdm(IDs):
-#         imgDir = os.path.join(rootPath, id)
-#         # print("imgDir=",imgDir)
-#         imgPaths = os.listdir(imgDir)
-#         # print("imgPaths=",imgPaths)
-#         imgPaths.sort(key=lambda x:int(x[:-4]))
-#         # print("imgPaths=", imgPaths)
-#         for imgName in imgPaths:
-#             imgPath = os.path.join(imgDir,imgName)
-#             # print("imgPath=",imgPath)
-#             ID = str(imgPath.split("/")[-2])
-#             # print("ID=",ID)
-#             writePath = str(imgPath.split("/")[-2]) + "/" + str(imgPath.split("/")[-1])
-#             trainImage.write(writePath + "\n")
-#             trainImage.flush()
-#             num_act += 1
-#             imgBGR = cv2.imread(imgPath)
-#             imgRGB = cv2.cvtColor(imgBGR,cv2.COLOR_BGR2RGB)
-#             try:
-#                 # coefficient = angleDetection(imgRGB)
-#                 yaw = angleNoDetection(imgRGB)
-#                 coefficient = yawCoefficient(abs(yaw))
-#                 # print("coefficient=",coefficient)
-#                 num_pre += 1
-#                 trainLable.write(ID + " " + str(coefficient)+ "\n")
-#                 trainLable.flush()
-#             except Exception as e:
-#                 print(e)
-#     print("num_act=",num_act)
-#     print("num_pre=",num_pre)
+## deal vgg_face2's dataset
+if __name__ == '__main__':
+    weightPath1 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_capsule_3_16_2_21_5/fsanet_capsule_3_16_2_21_5.h5'
+    weightPath2 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_var_capsule_3_16_2_21_5/fsanet_var_capsule_3_16_2_21_5.h5'
+    weightPath3 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_noS_capsule_3_16_2_192_5/fsanet_noS_capsule_3_16_2_192_5.h5'
+    model = createCapsuleModel(weightPath1,weightPath2,weightPath3)
+    # rootPath = "/home/zhex/Downloads/data/train"
+    rootPath = "/home/zhex/Downloads/data/test"
+    # csv_path = "/home/zhex/Downloads/data/bb_landmark/loose_bb_train.csv"
+    csv_path = "/home/zhex/Downloads/data/bb_landmark/loose_bb_test.csv"
+    filex = open(csv_path,"r")
+    next(filex)
+    infos = filex.readlines()
+    # annotation_path = "/home/zhex/Downloads/data/annotations/train"
+    annotation_path = "/home/zhex/Downloads/data/annotations/test"
+    if not os.path.exists(annotation_path):
+        os.makedirs(annotation_path)
+    IDs = os.listdir(rootPath)
+    IDs.sort(key=lambda x: int(x[1:]))
+    index = 0
+    for id in tqdm(IDs):
+        trainLabel = open(annotation_path + "/" +"{}.txt".format(id), "a")
+        imgDir = os.path.join(rootPath, id)
+        imgPaths = os.listdir(imgDir)
+        imgPaths.sort(key=lambda x:int(x[:-4].split("_")[0]))
+        for imgName in imgPaths:
+            imgPath = os.path.join(imgDir,imgName)
+            info = infos[index].split(",")
+            middle_path =  info[0].split('"')[1]
+            # f_path =  "/home/zhex/Downloads/data/train/" + middle_path + ".jpg"
+            f_path =  "/home/zhex/Downloads/data/test/" + middle_path + ".jpg"
+            x1 = int(info[1])-5
+            y1 = int(info[2])-5
+            x2 = x1 + int(info[3])+5
+            y2 = y1 + int(info[4])+5
+            if x1< 0 or y1 < 0 or x2 < x1 or y2 < y1:
+                continue
+            index += 1
+            ID = str(imgPath.split("/")[-2])
+            writePath = str(imgPath.split("/")[-3]) + "/" + str(imgPath.split("/")[-2]) + "/" + str(imgPath.split("/")[-1])
+            # print("f_path=",f_path)
+            # print("imgPath=",imgPath)
+            if f_path == imgPath:
+                try:
+                    imgBGR = cv2.imread(imgPath)
+                    imgBGR = imgBGR[y1:y2,x1:x2,:]
+                    imgRGB = cv2.cvtColor(imgBGR, cv2.COLOR_BGR2RGB)
+                    yaw = angleNoDetection(imgRGB)
+                    trainLabel.write(writePath + " " + yaw + "\n")
+                except Exception as e:
+                    print(e)
+            else:
+                pass
 
 # if __name__ == '__main__':
 #     weightPath1 = '/home/zhex/pre_models/faceYaw/300W_LP_models/fsanet_capsule_3_16_2_21_5/fsanet_capsule_3_16_2_21_5.h5'

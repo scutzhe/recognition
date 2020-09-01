@@ -110,9 +110,9 @@ def profile_yaw(origin_train_profile_dir,origin_test_profile_dir,new_train_profi
     assert os.path.exists(origin_train_profile_dir),"{} is null !!!".format(origin_train_profile_dir)
     assert os.path.exists(origin_test_profile_dir),"{} is null !!!".format(origin_test_profile_dir)
     if not os.path.exists(new_train_profile_dir):
-        os.makedirs(new_train_frontal_dir)
+        os.makedirs(new_train_profile_dir)
     if not os.path.exists(new_test_profile_dir):
-        os.makedirs(new_test_frontal_dir)
+        os.makedirs(new_test_profile_dir)
 
     origin_train_profile_names = os.listdir(origin_train_profile_dir)
     origin_test_profile_names = os.listdir(origin_test_profile_dir)
@@ -258,6 +258,38 @@ def get_sub_dataset(origin_train_frontal_dir,origin_train_profile_dir,origin_tes
         image_path = os.path.join(origin_test_profile_dir,name)
         shutil.copy(image_path,subset_test_profile_dir)
 
+def split_frontal_profile(origin_image_dir,train_frontal_image_dir,train_profile_image_dir):
+    """
+    :param origin_image_dir:
+    :param train_frontal_image_dir:
+    :param train_profile_image_dir:
+    :return:
+    """
+    assert os.path.exists(origin_image_dir),"{} is null !!!".format(origin_image_dir)
+    if not os.path.exists(train_frontal_image_dir):
+        os.makedirs(train_frontal_image_dir)
+    if not os.path.exists(train_profile_image_dir):
+        os.makedirs(train_profile_image_dir)
+
+    image_names = os.listdir(origin_image_dir)
+    indexF_train =0
+    indexP_train = 0
+    indexF_test = 0
+    indexP_test = 0
+    for name in tqdm(image_names):
+        image_path = os.path.join(origin_image_dir,name)
+        flag = int(str(name.split(".")[0]).split("_")[1])
+        if flag <= 5:
+            indexF_train += 1
+            shutil.copy(image_path,train_frontal_image_dir)
+        elif flag >= 45:
+            indexP_train += 1
+            shutil.copy(image_path,train_profile_image_dir)
+        else:
+            pass
+
+    print("indexF_train=",indexF_train)
+    print("indexP_train=",indexP_train)
 
 ## step 1
 # if __name__ == "__main__":
@@ -296,15 +328,21 @@ def get_sub_dataset(origin_train_frontal_dir,origin_train_profile_dir,origin_tes
 #     add_frontal(src_dir,target_dir)
 
 
-if __name__ == "__main__":
-    origin_train_frontal_dir = "/home/zhex/Downloads/face_classification_full_1530_12/train/frontal"
-    origin_train_profile_dir = "/home/zhex/Downloads/face_classification_full_1530_12/train/profile"
-    origin_test_frontal_dir = "/home/zhex/Downloads/face_classification_full_1530_12/test/frontal"
-    origin_test_profile_dir = "/home/zhex/Downloads/face_classification_full_1530_12/test/profile"
-    subset_train_frontal_dir = "/home/zhex/Downloads/face_classification_full_1530_2/train/frontal"
-    subset_train_profile_dir = "/home/zhex/Downloads/face_classification_full_1530_2/train/profile"
-    subset_test_frontal_dir = "/home/zhex/Downloads/face_classification_full_1530_2/test/frontal"
-    subset_test_profile_dir = "/home/zhex/Downloads/face_classification_full_1530_2/test/profile"
-    get_sub_dataset(origin_train_frontal_dir, origin_train_profile_dir, origin_test_frontal_dir,
-                    origin_test_profile_dir,subset_train_frontal_dir, subset_train_profile_dir,
-                    subset_test_frontal_dir,subset_test_profile_dir)
+# if __name__ == "__main__":
+#     origin_train_frontal_dir = "/home/zhex/Downloads/face_classification_full_1530_12/train/frontal"
+#     origin_train_profile_dir = "/home/zhex/Downloads/face_classification_full_1530_12/train/profile"
+#     origin_test_frontal_dir = "/home/zhex/Downloads/face_classification_full_1530_12/test/frontal"
+#     origin_test_profile_dir = "/home/zhex/Downloads/face_classification_full_1530_12/test/profile"
+#     subset_train_frontal_dir = "/home/zhex/Downloads/face_classification_full_1530_2/train/frontal"
+#     subset_train_profile_dir = "/home/zhex/Downloads/face_classification_full_1530_2/train/profile"
+#     subset_test_frontal_dir = "/home/zhex/Downloads/face_classification_full_1530_2/test/frontal"
+#     subset_test_profile_dir = "/home/zhex/Downloads/face_classification_full_1530_2/test/profile"
+#     get_sub_dataset(origin_train_frontal_dir, origin_train_profile_dir, origin_test_frontal_dir,
+#                     origin_test_profile_dir,subset_train_frontal_dir, subset_train_profile_dir,
+#                     subset_test_frontal_dir,subset_test_profile_dir)
+
+# if __name__ == "__main__":
+#     origin_image_dir = "/home/zhex/data/face_classification_full/images"
+#     train_frontal_image_dir = "/home/zhex/data/face_classification_0545/train/frontal"
+#     train_profile_image_dir = "/home/zhex/data/face_classification_0545/train/profile"
+#     split_frontal_profile(origin_image_dir, train_frontal_image_dir, train_profile_image_dir)

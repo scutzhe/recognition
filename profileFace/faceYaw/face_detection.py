@@ -4,7 +4,7 @@
 # @author  : 郑祥忠
 # @license : (C) Copyright,2016-2020,广州海格星航科技
 # @contact : dylenzheng@gmail.com
-# @file    : faceDetection.py
+# @file    : face_detection.py
 # @time    : 7/16/20 11:17 AM
 # @desc    : 
 '''
@@ -83,11 +83,11 @@ def faceDetectionCenterMutilFace(img: np.array, landmarks=True):
         return imgs
 
 if __name__ == "__main__":
-    image_dir = "/home/zhex/data/818capture/pic1"
+    image_dir = "/home/zhex/data/818capture/pic2"
     save_dir = "/home/zhex/data/monitor/images"
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
-    index = 0
+    index = 18374 ## pic2
     for name in tqdm(os.listdir(image_dir)):
         image_path = os.path.join(image_dir,name)
         try:
@@ -95,11 +95,12 @@ if __name__ == "__main__":
             img_dict = faceDetectionCenterMutilFace(image)
             for key,value in img_dict.items():
                 index += 1
-                cv2.imshow("img",value)
-                cv2.waitKey(10000)
+                # cv2.imshow("img",value)
+                # cv2.waitKey(10000)
                 cv2.imwrite(save_dir + "/" + "{}.png".format(index),value)
         except Exception as e:
             print(e)
+    print("index=",index)
 
 
 # if __name__ == "__main__":
